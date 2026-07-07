@@ -153,6 +153,35 @@ function parseMarkdown(content) {
   return tmp.innerHTML;
 }
 
+// ── Tab persistence ──────────────────────────────────────────────────────
+
+const TAB_PERSIST_KEY = 'easymd-tabs';
+
+/** Save the current tab paths to localStorage. */
+function persistTabs() {
+  localStorage.setItem(TAB_PERSIST_KEY, JSON.stringify(tabs.map((t) => t.path)));
+}
+
+/** Re-open tabs that were saved from the previous session. */
+async function restoreTabs() {
+  let paths = [];
+  try {
+    const raw = localStorage.getItem(TAB_PERSIST_KEY);
+    if (raw) paths = JSON.parse(raw);
+  } catch {
+    return;
+  }
+  if (!Array.isArray(paths) || paths.length === 0) return;
+
+  // Skip paths already opened (e.g. the initial file from argv[1]).
+  const existing = new Set(tabs.map((t) => t.path));
+  for (const p of paths) {
+    if (typeof p === 'string' && p.trim() && !existing.has(p)) {
+      await openFileAsTab(p).catch(() => {}); // silently skip missing files
+    }
+  }
+}
+
 // ── Tab management ────────────────────────────────────────────────────────
 
 /** Rebuild the tab bar DOM from the `tabs` array. */
@@ -199,11 +228,13 @@ function closeTab(index) {
   if (tabs.length === 0) {
     activeIndex = -1;
     showWelcome();
+    persistTabs();
     return;
   }
   // Move to the neighbour closer to the end of the old list.
   const next = Math.min(index, tabs.length - 1);
   switchTab(next);
+  persistTabs();
 }
 
 /** Show the welcome screen (no open files). */
@@ -238,12 +269,14 @@ async function openFileAsTab(path) {
     if (existingIdx >= 0) {
       tabs[existingIdx] = { path, html, filename };
       switchTab(existingIdx);
+      persistTabs();
       return;
     }
 
     // New tab.
     tabs.push({ path, html, filename });
     switchTab(tabs.length - 1);
+    persistTabs();
   } catch (err) {
     showError(`Failed to read "${path}": ${err}`);
   }
@@ -354,6 +387,11 @@ async function init() {
   if (typeof initialPath === 'string' && initialPath.trim()) {
     await openFileAsTab(initialPath);
   }
+
+  // 4. Restore tabs from the previous session.
+  //    openFileAsTab() deduplicates, so the initial file (step 3) won't
+  //    appear twice. Missing files are silently skipped.
+  await restoreTabs();
 }
 
 init().catch(console.error);
