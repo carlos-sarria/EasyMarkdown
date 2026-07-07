@@ -51,3 +51,9 @@ Thanks. It works fine now and it looks very good, sadly it seems not capable of 
 
 Ah, well done, it is fixed now and it also shows syntax highlight which is a very good bonus! :)
 (1433)
+
+To open a single file (which was the brief) works beautifully. How hard will be to have a tab system with all the previous files showing until the user really closes the tab? (similar to how Notepad++ works). Only if the implementation of this is not overly complex. Thanks. 
+(1449)
+
+Yes, it works very well. When double-click on a .md file it opens a new instance of the application instead opening a new tab in the current running instance. Is this something you can fix? Thanks.
+(1454)

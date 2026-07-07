@@ -4,6 +4,7 @@ use std::net::{TcpListener, TcpStream};
 use std::sync::mpsc;
 use std::sync::Mutex;
 use std::thread;
+use tauri::Emitter;
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
