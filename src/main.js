@@ -37,22 +37,6 @@ import darkTheme  from 'highlight.js/styles/github-dark.css?inline';
 marked.use({
   gfm: true,
   breaks: false,
-  renderer: {
-    // Syntax-highlight fenced code blocks via highlight.js.
-    // In marked v13 the renderer receives a single token object; on some
-    // input (e.g. indented code blocks) `text` may be undefined, so we guard.
-    code({ text, lang }) {
-      const safeText = typeof text === 'string' ? text : '';
-      const language = lang && hljs.getLanguage(lang) ? lang : null;
-      const highlighted = safeText
-        ? (language
-            ? hljs.highlight(safeText, { language, ignoreIllegals: true }).value
-            : hljs.highlightAuto(safeText).value)
-        : '';
-      const cls = language ? `hljs language-${language}` : 'hljs';
-      return `<pre><code class="${cls}">${highlighted}</code></pre>`;
-    },
-  },
 });
 
 // ── State ─────────────────────────────────────────────────────────────────
@@ -174,7 +158,29 @@ function renderMarkdown(content, path) {
     showError(`Could not parse "${path}": ${err}`);
     return;
   }
-  elMarkdownBody.innerHTML = html;
+
+  // Apply highlight.js *after* marked produces clean HTML.
+  // Post-processing is more reliable than overriding marked's renderer.code(),
+  // which in v13 has inconsistent token shapes for fenced vs indented blocks.
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  tmp.querySelectorAll('pre code').forEach((block) => {
+    const langClass = Array.from(block.classList).find((c) =>
+      c.startsWith('language-')
+    );
+    const lang = langClass ? langClass.replace('language-', '') : '';
+    const text = block.textContent; // browser decodes HTML entities for us
+
+    if (text) {
+      const language = lang && hljs.getLanguage(lang) ? lang : null;
+      block.innerHTML = language
+        ? hljs.highlight(text, { language, ignoreIllegals: true }).value
+        : hljs.highlightAuto(text).value;
+      block.classList.add('hljs');
+      if (language) block.classList.add(`language-${language}`);
+    }
+  });
+  elMarkdownBody.innerHTML = tmp.innerHTML;
 
   // Show markdown, hide welcome
   elMarkdownBody.classList.remove('hidden');
