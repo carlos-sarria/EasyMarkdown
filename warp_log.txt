@@ -16,4 +16,8 @@ One thing you'll need to do manually — icons
 Tauri requires icon files in src-tauri/icons/ before it will build. The easiest way is to provide a single 1024×1024 PNG and let the CLI generate all sizes:
 bash
 This generates icons/32x32.png, icons/128x128.png, icons/icon.ico, icons/icon.icns, etc. Without this step, cargo tauri build will fail at the bundle step (though cargo tauri dev will still work fine for development).
+
+> cargo install tauri-cli
+> cargo tauri icon C:\dev\Applications\EasyMD\src-tauri\icons\EasyMD.png
+
 >>>>>>>>>>>>

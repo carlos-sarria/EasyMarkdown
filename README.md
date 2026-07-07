@@ -237,6 +237,14 @@ npm run tauri -- build
 
 The Vite dev server listens on **port 1420** (hardcoded in `vite.config.js`). Tauri's `devUrl` must match this.
 
+
+## Create/Update Icons
+
+From the project root
+
+```bash
+cargo tauri icon C:\dev\Applications\EasyMD\src-tauri\icons\EasyMD.png
+```
 ---
 
 ## Key design decisions
