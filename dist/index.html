@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EasyMD</title>
-  <script type="module" crossorigin src="/assets/index-Dry39aG8.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-BT4XGBGq.css">
+  <script type="module" crossorigin src="/assets/index-CLy1o40q.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-vE0BmymI.css">
 </head>
 <body>
   <div id="app">
@@ -20,6 +20,9 @@
         <button id="btn-theme"  title="Toggle dark / light mode">🌙</button>
       </div>
     </header>
+
+    <!-- ── Tab bar (hidden when no files open) ──────────────────────── -->
+    <nav id="tabs"></nav>
 
     <!-- ── Drag-and-drop overlay (shown while dragging) ────────────── -->
     <div id="drop-overlay" class="hidden">
@@ -37,7 +40,8 @@
         <button id="btn-open-welcome">Open a file</button>
         <p class="hint">
           or drag &amp; drop a <code>.md</code> file anywhere
-          &nbsp;·&nbsp; <kbd>Ctrl+O</kbd>
+          &nbsp;·&nbsp; <kbd>Ctrl+O</kbd> to open
+          &nbsp;·&nbsp; <kbd>Ctrl+W</kbd> to close a tab
         </p>
       </div>
 
