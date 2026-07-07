@@ -1,0 +1,19 @@
+
+I have been looking around for a good mark-down viewer/editor for Windows. I am a developer and use md format extensively. I use VS Code for visualization but it is not very convenient. Anything else I have found in the Microsoft Store is wrong for one reason or another so I have decided to write my own. 
+Although I work mostly on Windows and also use Linux and MacOS so I would like the app to work in all OSes, I was thinking on an PWA app. I think it should use an existing MD libraries (maybe there is something for NodeJS) and it should be just a editor wrapper. It should display the pretty version of the md file by default. The edition in plain text should be possible.
+(1303 Claude Sonnet)
+
+I like the Tauri option as I am quite familiar with Rust and I am after an app wrapper with not much overhead. Could you write the frontend (HTML/JS/CSS) in this location C:\dev\Applications\EasyMD. EasyMD is the project name :) Thanks.
+(1324 Full structure)
+
+Thanks. Could you write a README.md with the app architecture and any info that an AI agent might require if in the future needs to work with this app? Thanks. 
+(1360)
+
+By the way, could write the files required in src-tauri/ ?
+(1407)
+<<<<<<<<<<<<
+One thing you'll need to do manually — icons
+Tauri requires icon files in src-tauri/icons/ before it will build. The easiest way is to provide a single 1024×1024 PNG and let the CLI generate all sizes:
+bash
+This generates icons/32x32.png, icons/128x128.png, icons/icon.ico, icons/icon.icns, etc. Without this step, cargo tauri build will fail at the bundle step (though cargo tauri dev will still work fine for development).
+>>>>>>>>>>>>

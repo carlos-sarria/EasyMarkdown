@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EasyMD</title>
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── Toolbar ─────────────────────────────────────────────────── -->
+    <header id="toolbar" data-tauri-drag-region>
+      <span id="app-name" data-tauri-drag-region>EasyMD</span>
+      <span id="file-path" title=""></span>
+      <div id="toolbar-actions">
+        <button id="btn-reload" title="Reload file (Ctrl+R)" class="hidden">↺</button>
+        <button id="btn-open"   title="Open file (Ctrl+O)">Open</button>
+        <button id="btn-theme"  title="Toggle dark / light mode">🌙</button>
+      </div>
+    </header>
+
+    <!-- ── Drag-and-drop overlay (shown while dragging) ────────────── -->
+    <div id="drop-overlay" class="hidden">
+      <div id="drop-message">Drop a Markdown file here</div>
+    </div>
+
+    <!-- ── Main content ────────────────────────────────────────────── -->
+    <main id="content">
+
+      <!-- Welcome screen (visible when no file is open) -->
+      <div id="welcome">
+        <div class="welcome-icon">📄</div>
+        <h1>EasyMD</h1>
+        <p class="welcome-sub">A clean, minimal Markdown viewer</p>
+        <button id="btn-open-welcome">Open a file</button>
+        <p class="hint">
+          or drag &amp; drop a <code>.md</code> file anywhere
+          &nbsp;·&nbsp; <kbd>Ctrl+O</kbd>
+        </p>
+      </div>
+
+      <!-- Rendered markdown (hidden until a file is loaded) -->
+      <article id="markdown-body" class="hidden"></article>
+
+      <!-- Error banner -->
+      <div id="error-banner" class="hidden">
+        <span id="error-message"></span>
+        <button id="btn-error-dismiss">✕</button>
+      </div>
+
+    </main>
+
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
