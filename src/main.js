@@ -155,19 +155,16 @@ function parseMarkdown(content) {
 
 // ── Tab persistence ──────────────────────────────────────────────────────
 
-const TAB_PERSIST_KEY = 'easymd-tabs';
-
-/** Save the current tab paths to localStorage. */
+/** Save the current tab paths to disk (Rust command). */
 function persistTabs() {
-  localStorage.setItem(TAB_PERSIST_KEY, JSON.stringify(tabs.map((t) => t.path)));
+  invoke('save_tabs', { paths: tabs.map((t) => t.path) }).catch(() => {});
 }
 
 /** Re-open tabs that were saved from the previous session. */
 async function restoreTabs() {
   let paths = [];
   try {
-    const raw = localStorage.getItem(TAB_PERSIST_KEY);
-    if (raw) paths = JSON.parse(raw);
+    paths = await invoke('load_tabs');
   } catch {
     return;
   }

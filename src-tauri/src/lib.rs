@@ -1,3 +1,4 @@
+use std::fs;
 use std::io::Read;
 use std::io::Write;
 use std::net::{TcpListener, TcpStream};
@@ -40,6 +41,36 @@ pub struct AppState {
 #[tauri::command]
 fn get_initial_file(state: tauri::State<'_, AppState>) -> Option<String> {
     state.initial_file.lock().unwrap().take()
+}
+
+// ── Tab persistence ───────────────────────────────────────────────────────
+
+/// Returns the path to `tabs.json` inside the app's data directory.
+fn tabs_file_path(app: &tauri::AppHandle) -> std::path::PathBuf {
+    let mut dir = app
+        .path()
+        .app_data_dir()
+        .expect("app data dir");
+    fs::create_dir_all(&dir).ok();
+    dir.push("tabs.json");
+    dir
+}
+
+/// Save the ordered list of open tab paths to disk.
+#[tauri::command]
+fn save_tabs(app: tauri::AppHandle, paths: Vec<String>) {
+    let json = serde_json::to_string(&paths).unwrap_or_default();
+    let _ = fs::write(tabs_file_path(&app), json);
+}
+
+/// Return the previously saved list of open tab paths (may be empty).
+#[tauri::command]
+fn load_tabs(app: tauri::AppHandle) -> Vec<String> {
+    let path = tabs_file_path(&app);
+    match fs::read_to_string(&path) {
+        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+        Err(_) => vec![],
+    }
 }
 
 // ── Single-instance IPC ───────────────────────────────────────────────────
@@ -128,7 +159,7 @@ pub fn run() {
         // Plugin: read files from disk → JS: @tauri-apps/plugin-fs
         .plugin(tauri_plugin_fs::init())
         // Register custom commands
-        .invoke_handler(tauri::generate_handler![get_initial_file])
+        .invoke_handler(tauri::generate_handler![get_initial_file, save_tabs, load_tabs])
         // Wire up single-instance IPC: forward paths received from secondary
         // instances to the frontend as "file-opened" events.
         .setup(move |app| {
