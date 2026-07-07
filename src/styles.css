@@ -170,6 +170,88 @@ button:active { opacity: 0.8; }
   line-height: 1;
 }
 
+/* ── Tab bar ────────────────────────────────────────────────────────────── */
+
+#tabs {
+  display: flex;
+  flex-shrink: 0;
+  height: 34px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+#tabs::-webkit-scrollbar { height: 3px; }
+#tabs::-webkit-scrollbar-track { background: transparent; }
+#tabs::-webkit-scrollbar-thumb {
+  background: var(--scrollbar);
+  border-radius: 2px;
+}
+
+#tabs:empty { display: none; }
+
+/* Individual tab */
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 0 14px;
+  max-width: 180px;
+  height: 100%;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.1s ease;
+  position: relative;
+}
+
+.tab:hover { background: var(--surface-hover); }
+
+.tab.active {
+  color: var(--text);
+  background: var(--bg);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--link);
+}
+
+.tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'SF Mono', 'Cascadia Code', Consolas, 'Liberation Mono', monospace;
+}
+
+.tab-close {
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 3px;
+  border: none;
+  background: transparent;
+  color: var(--text-subtle);
+  cursor: pointer;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.tab-close:hover {
+  background: rgba(128, 128, 128, 0.2);
+  color: var(--text);
+}
+
 /* ── Drag-and-drop overlay ──────────────────────────────────────────────── */
 
 #drop-overlay {

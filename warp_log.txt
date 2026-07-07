@@ -1,3 +1,16 @@
+# Install JS dependencies
+npm install
+# Frontend-only dev server (no Rust, useful for UI work)
+npm run dev
+# Full Tauri dev build (starts Vite + compiles Rust + opens window)
+cargo tauri dev          # from src-tauri/
+# or
+npm run tauri -- dev     # from project root
+# Production build
+npm run tauri -- build
+
+------------------------
+07/07/2026
 
 I have been looking around for a good mark-down viewer/editor for Windows. I am a developer and use md format extensively. I use VS Code for visualization but it is not very convenient. Anything else I have found in the Microsoft Store is wrong for one reason or another so I have decided to write my own. 
 Although I work mostly on Windows and also use Linux and MacOS so I would like the app to work in all OSes, I was thinking on an PWA app. I think it should use an existing MD libraries (maybe there is something for NodeJS) and it should be just a editor wrapper. It should display the pretty version of the md file by default. The edition in plain text should be possible.
@@ -21,3 +34,20 @@ This generates icons/32x32.png, icons/128x128.png, icons/icon.ico, icons/icon.ic
 > cargo tauri icon C:\dev\Applications\EasyMD\src-tauri\icons\EasyMD.png
 
 >>>>>>>>>>>>
+
+Looking good. It builds and runs correctly. Sadly, I've this error when opening a md file:
+Failed to read "C:\dev\Applications\EasyMD\README.md": TypeError: Cannot read properties of undefined (reading 'replace') Please report this to https://github.com/markedjs/marked.
+
+Before I rebuild it. I've got this error as well when trying to double-click on a md file associated to this app.
+Failed to read "C:\dev\Applications\EasyMD\README.md": forbidden path: C:\dev\Applications\EasyMD\README.md
+(1417 Move to DeepSeek)
+
+Before I rebuild it. I've got this error as well when trying to double-click on a md file associated to this app.
+Failed to read "C:\dev\Applications\EasyMD\README.md": forbidden path: C:\dev\Applications\EasyMD\README.md
+(1420)
+
+Thanks. It works fine now and it looks very good, sadly it seems not capable of rendering the ```bash sections which appear empty. Is this fixable? 
+(1425)
+
+Ah, well done, it is fixed now and it also shows syntax highlight which is a very good bonus! :)
+(1433)

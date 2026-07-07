@@ -20,6 +20,9 @@
       </div>
     </header>
 
+    <!-- ── Tab bar (hidden when no files open) ──────────────────────── -->
+    <nav id="tabs"></nav>
+
     <!-- ── Drag-and-drop overlay (shown while dragging) ────────────── -->
     <div id="drop-overlay" class="hidden">
       <div id="drop-message">Drop a Markdown file here</div>
@@ -36,7 +39,8 @@
         <button id="btn-open-welcome">Open a file</button>
         <p class="hint">
           or drag &amp; drop a <code>.md</code> file anywhere
-          &nbsp;·&nbsp; <kbd>Ctrl+O</kbd>
+          &nbsp;·&nbsp; <kbd>Ctrl+O</kbd> to open
+          &nbsp;·&nbsp; <kbd>Ctrl+W</kbd> to close a tab
         </p>
       </div>
 
