@@ -38,12 +38,17 @@ marked.use({
   gfm: true,
   breaks: false,
   renderer: {
-    // Syntax-highlight fenced code blocks via highlight.js
+    // Syntax-highlight fenced code blocks via highlight.js.
+    // In marked v13 the renderer receives a single token object; on some
+    // input (e.g. indented code blocks) `text` may be undefined, so we guard.
     code({ text, lang }) {
+      const safeText = typeof text === 'string' ? text : '';
       const language = lang && hljs.getLanguage(lang) ? lang : null;
-      const highlighted = language
-        ? hljs.highlight(text, { language, ignoreIllegals: true }).value
-        : hljs.highlightAuto(text).value;
+      const highlighted = safeText
+        ? (language
+            ? hljs.highlight(safeText, { language, ignoreIllegals: true }).value
+            : hljs.highlightAuto(safeText).value)
+        : '';
       const cls = language ? `hljs language-${language}` : 'hljs';
       return `<pre><code class="${cls}">${highlighted}</code></pre>`;
     },
@@ -162,7 +167,14 @@ async function reloadFile() {
  * @param {string} path     File path (used for title / display)
  */
 function renderMarkdown(content, path) {
-  elMarkdownBody.innerHTML = marked.parse(content);
+  let html;
+  try {
+    html = marked.parse(content);
+  } catch (err) {
+    showError(`Could not parse "${path}": ${err}`);
+    return;
+  }
+  elMarkdownBody.innerHTML = html;
 
   // Show markdown, hide welcome
   elMarkdownBody.classList.remove('hidden');
@@ -173,8 +185,8 @@ function renderMarkdown(content, path) {
   elContent.scrollTop = 0;
 
   // Update toolbar path display (show only the filename, full path in tooltip)
-  const filename = path.replace(/\\/g, '/').split('/').pop();
-  elFilePath.textContent = filename ?? path;
+  const filename = path.replace(/\\/g, '/').split('/').pop() ?? path;
+  elFilePath.textContent = filename;
   elFilePath.title       = path;
 
   // Update window title
