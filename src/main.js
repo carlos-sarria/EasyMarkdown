@@ -381,14 +381,17 @@ async function init() {
 
   // 3. Ask Rust for the file path passed via CLI arg or OS file association.
   const initialPath = await invoke('get_initial_file').catch(() => null);
-  if (typeof initialPath === 'string' && initialPath.trim()) {
-    await openFileAsTab(initialPath);
-  }
 
   // 4. Restore tabs from the previous session.
   //    openFileAsTab() deduplicates, so the initial file (step 3) won't
   //    appear twice. Missing files are silently skipped.
   await restoreTabs();
+
+  // 5. Finaly open the tabs with the files
+  if (typeof initialPath === 'string' && initialPath.trim()) {
+    await openFileAsTab(initialPath);
+  }
+
 }
 
 init().catch(console.error);
