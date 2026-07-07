@@ -5,6 +5,7 @@ use std::sync::mpsc;
 use std::sync::Mutex;
 use std::thread;
 use tauri::Emitter;
+use tauri::Manager;
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
