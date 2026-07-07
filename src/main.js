@@ -213,8 +213,8 @@ function switchTab(index) {
 
   elContent.scrollTop = 0;
   document.title = `${tab.filename} — EasyMD`;
-  elFilePath.textContent = tab.filename;
-  elFilePath.title = tab.path;
+  //elFilePath.textContent = tab.filename;
+  //elFilePath.title = tab.path;
 
   renderTabs();
 }
