@@ -134,6 +134,12 @@ pub fn run() {
             let handle = app.handle().clone();
             thread::spawn(move || {
                 for path in incoming_paths {
+                    // Bring the window to the foreground.
+                    if let Some(w) = handle.get_webview_window("main") {
+                        let _ = w.show();
+                        let _ = w.unminimize();
+                        let _ = w.set_focus();
+                    }
                     let _ = handle.emit("file-opened", path);
                 }
             });
