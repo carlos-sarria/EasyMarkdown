@@ -6,6 +6,9 @@
   "permissions": [
     "core:default",
     "dialog:allow-open",
-    "fs:allow-read-text-file"
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [{"path": "**"}]
+    }
   ]
 }
