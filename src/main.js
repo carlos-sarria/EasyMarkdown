@@ -71,6 +71,9 @@ const elImgTheme      = document.getElementById('img_theme');
 const elBtnDismiss    = document.getElementById('btn-error-dismiss');
 const elContent       = document.getElementById('content');
 
+const themeIconDark  = new URL('../src-tauri/svg/dark_mode.svg', import.meta.url).href;
+const themeIconLight = new URL('../src-tauri/svg/light_mode.svg', import.meta.url).href;
+
 // ── highlight.js theme injection ─────────────────────────────────────────
 
 const hljsStyleEl = document.createElement('style');
@@ -81,8 +84,7 @@ document.head.appendChild(hljsStyleEl);
 function applyTheme() {
   elHtml.dataset.theme     = isDark ? 'dark' : 'light';
   hljsStyleEl.textContent  = isDark ? darkTheme : lightTheme;
-  //elBtnTheme.textContent   = isDark ? '☀️' : '🌙';
-  elImgTheme.src = isDark ? "file:///src-tauri/svg/light_mode.svg" : "file:///src-tauri/svg/dark_mode.svg"; 
+  elImgTheme.src           = isDark ? themeIconLight : themeIconDark;
   elBtnTheme.title         = isDark ? 'Switch to light mode' : 'Switch to dark mode';
 }
 
