@@ -1,5 +1,5 @@
 [package]
-name = "easymd"
+name = "EasyMD"
 version = "0.1.0"
 description = "A lightweight, cross-platform Markdown viewer"
 authors = []
