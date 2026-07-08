@@ -311,6 +311,11 @@ elBtnReload.addEventListener('click', reloadFile);
 elBtnTheme.addEventListener('click', toggleTheme);
 elBtnDismiss.addEventListener('click', hideError);
 
+document.addEventListener('contextmenu', (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+});
+
 // Tab click delegation — switch to tab on click, close on × click.
 elTabs.addEventListener('click', (e) => {
   const closeBtn = e.target.closest('.tab-close');
