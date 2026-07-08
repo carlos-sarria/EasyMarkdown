@@ -243,7 +243,7 @@ The Vite dev server listens on **port 1420** (hardcoded in `vite.config.js`). Ta
 From the project root
 
 ```bash
-cargo tauri icon C:\dev\Applications\EasyMD\src-tauri\icons\EasyMD.png
+cargo tauri icon src-tauri\svg\EasyMD.svg
 ```
 ---
 

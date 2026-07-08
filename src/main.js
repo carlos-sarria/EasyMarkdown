@@ -67,6 +67,7 @@ const elBtnOpen       = document.getElementById('btn-open');
 const elBtnOpenWelcome= document.getElementById('btn-open-welcome');
 const elBtnReload     = document.getElementById('btn-reload');
 const elBtnTheme      = document.getElementById('btn-theme');
+const elImgTheme      = document.getElementById('img_theme');
 const elBtnDismiss    = document.getElementById('btn-error-dismiss');
 const elContent       = document.getElementById('content');
 
@@ -80,7 +81,8 @@ document.head.appendChild(hljsStyleEl);
 function applyTheme() {
   elHtml.dataset.theme     = isDark ? 'dark' : 'light';
   hljsStyleEl.textContent  = isDark ? darkTheme : lightTheme;
-  elBtnTheme.textContent   = isDark ? '☀️' : '🌙';
+  //elBtnTheme.textContent   = isDark ? '☀️' : '🌙';
+  elImgTheme.src = isDark ? "file:///src-tauri/svg/light_mode.svg" : "file:///src-tauri/svg/dark_mode.svg"; 
   elBtnTheme.title         = isDark ? 'Switch to light mode' : 'Switch to dark mode';
 }
 
@@ -213,8 +215,6 @@ function switchTab(index) {
 
   elContent.scrollTop = 0;
   document.title = `${tab.filename} — EasyMD`;
-  //elFilePath.textContent = tab.filename;
-  //elFilePath.title = tab.path;
 
   renderTabs();
 }

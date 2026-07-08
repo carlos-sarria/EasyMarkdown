@@ -4,8 +4,4 @@ src-tauri/target/
 src-tauri/Cargo.lock
 node_modules/
 src-tauri/icons/
-/dist/
-
-# Keep these files...
-!src-tauri/icons/EasyMD.png
-!src-tauri/icons/EasyMD.svg
+dist/

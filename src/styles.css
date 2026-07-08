@@ -6,7 +6,7 @@
 /* ── Design tokens ──────────────────────────────────────────────────────── */
 
 :root {
-  --toolbar-h: 44px;
+  --toolbar-h: 34px;
 
   /* Surface */
   --bg:             #ffffff;
@@ -96,6 +96,8 @@ body {
 /* ── Buttons ────────────────────────────────────────────────────────────── */
 
 button {
+  width: auto;
+  height: var(--toolbar-h)-4;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -105,8 +107,6 @@ button {
   color: var(--btn-text);
   border: 1px solid var(--btn-border);
   border-radius: var(--radius);
-  font-size: 13px;
-  font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.1s ease;
@@ -127,7 +127,6 @@ button:active { opacity: 0.8; }
   gap: 8px;
   padding: 0 12px;
   background: var(--surface);
-  border-bottom: 1px solid var(--border);
   z-index: 100;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
@@ -155,17 +154,6 @@ button:active { opacity: 0.8; }
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-}
-
-#btn-reload {
-  font-size: 16px;
-  padding: 4px 8px;
-}
-
-#btn-theme {
-  font-size: 15px;
-  padding: 4px 8px;
-  line-height: 1;
 }
 
 /* ── Tab bar ────────────────────────────────────────────────────────────── */
@@ -543,7 +531,7 @@ button:active { opacity: 0.8; }
 
 #markdown-body img {
   max-width: 100%;
-  height: auto;
+  height:auto;
   border-radius: 4px;
 }
 
