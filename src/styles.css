@@ -518,11 +518,28 @@ button:active { opacity: 0.8; }
 }
 
 @media print {
-  @page { margin: 12mm; }
+  /* Chromium/WebView2 controls print headers/footers from the print dialog,
+     so they cannot be fully removed from CSS alone. */
+  @page {
+    margin: 10mm 12mm 12mm 12mm;
+    size: auto;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 
   body {
     background: #fff !important;
     color: #000 !important;
+  }
+
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
   }
 
   #toolbar,
@@ -551,18 +568,53 @@ button:active { opacity: 0.8; }
     max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
-    color: #000 !important;
+    color: #111 !important;
+    background: transparent !important;
     font-size: 12pt !important;
     line-height: 1.4 !important;
   }
 
+  #markdown-body *,
+  #markdown-body *::before,
+  #markdown-body *::after {
+    color: inherit !important;
+    background: transparent !important;
+    border-color: #666 !important;
+  }
+
   #markdown-body a {
-    color: #000 !important;
+    color: #111 !important;
     text-decoration: underline !important;
+  }
+
+  #markdown-body pre,
+  #markdown-body pre > code,
+  #markdown-body :not(pre) > code,
+  #markdown-body .hljs {
+    background: #f5f5f5 !important;
+    color: #111 !important;
+    border-color: #999 !important;
   }
 
   #markdown-body pre > code {
     white-space: pre-wrap !important;
+  }
+
+  #markdown-body blockquote {
+    color: #333 !important;
+    border-left-color: #999 !important;
+  }
+
+  #markdown-body table,
+  #markdown-body th,
+  #markdown-body td {
+    background: #fff !important;
+    color: #111 !important;
+    border-color: #999 !important;
+  }
+
+  #markdown-body hr {
+    background: #999 !important;
   }
 }
 
