@@ -1,5 +1,6 @@
 # Helper files
 warp_log.txt
+microsoft-store-publishing-notes.md
 src-tauri/target/
 src-tauri/Cargo.lock
 node_modules/
