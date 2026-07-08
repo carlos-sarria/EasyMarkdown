@@ -66,6 +66,7 @@ const elErrorMessage  = document.getElementById('error-message');
 const elBtnOpen       = document.getElementById('btn-open');
 const elBtnOpenWelcome= document.getElementById('btn-open-welcome');
 const elBtnReload     = document.getElementById('btn-reload');
+const elBtnPrint      = document.getElementById('btn-print');
 const elBtnTheme      = document.getElementById('btn-theme');
 const elImgTheme      = document.getElementById('img_theme');
 const elBtnDismiss    = document.getElementById('btn-error-dismiss');
@@ -93,6 +94,14 @@ function toggleTheme() {
   applyTheme();
   // Persist preference
   localStorage.setItem('easymd-theme', isDark ? 'dark' : 'light');
+}
+
+function printCurrentDocument() {
+  if (activeIndex < 0) {
+    showError('Open a document before printing.');
+    return;
+  }
+  window.print();
 }
 
 // Restore saved preference if any
@@ -308,6 +317,7 @@ async function reloadFile() {
 elBtnOpen.addEventListener('click', pickAndOpenFile);
 elBtnOpenWelcome.addEventListener('click', pickAndOpenFile);
 elBtnReload.addEventListener('click', reloadFile);
+elBtnPrint.addEventListener('click', printCurrentDocument);
 elBtnTheme.addEventListener('click', toggleTheme);
 elBtnDismiss.addEventListener('click', hideError);
 
@@ -337,6 +347,7 @@ document.addEventListener('keydown', (e) => {
   const mod = e.ctrlKey || e.metaKey;
   if (mod && e.key === 'o') { e.preventDefault(); pickAndOpenFile(); return; }
   if (mod && e.key === 'r') { e.preventDefault(); reloadFile(); return; }
+  if (mod && e.key === 'p') { e.preventDefault(); printCurrentDocument(); return; }
   if (mod && e.key === 'w') { e.preventDefault(); if (activeIndex >= 0) closeTab(activeIndex); return; }
   // Ctrl+Tab / Ctrl+Shift+Tab to cycle tabs.
   if (mod && e.key === 'Tab' && tabs.length > 1) {

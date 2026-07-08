@@ -517,6 +517,55 @@ button:active { opacity: 0.8; }
   border-radius: 3px;
 }
 
+@media print {
+  @page { margin: 12mm; }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  #toolbar,
+  #drop-overlay,
+  #error-banner,
+  #welcome,
+  #btn-reload,
+  #btn-open,
+  #btn-print,
+  #btn-theme {
+    display: none !important;
+  }
+
+  #app {
+    display: block !important;
+    height: auto !important;
+  }
+
+  #content {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  #markdown-body {
+    display: block !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #000 !important;
+    font-size: 12pt !important;
+    line-height: 1.4 !important;
+  }
+
+  #markdown-body a {
+    color: #000 !important;
+    text-decoration: underline !important;
+  }
+
+  #markdown-body pre > code {
+    white-space: pre-wrap !important;
+  }
+}
+
 /* ── Tables ── */
 
 #markdown-body table {
