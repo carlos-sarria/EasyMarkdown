@@ -161,10 +161,59 @@ button:active { opacity: 0.8; }
 }
 
 #toolbar-actions img {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   display: block;
   filter: none;
+}
+
+#drawer-panel {
+  position: absolute;
+  top: calc(var(--toolbar-h) + 8px);
+  right: 12px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+  z-index: 200;
+  min-width: 180px;
+}
+
+#drawer-panel button {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+#drawer-panel button:hover {
+  background: var(--surface-hover);
+}
+
+#drawer-panel img {
+  width: 18px;
+  height: 18px;
+}
+
+#drawer-panel span {
+  display: inline-block;
+  font-size: 14px;
+  text-align: left;
+}
+
+#drawer-panel.hidden {
+  display: none;
+}
+
+[data-theme="dark"] #toolbar-actions img,
+[data-theme="dark"] #drawer-panel img {
+  filter: invert(1) brightness(1.2);
 }
 
 #about-modal {

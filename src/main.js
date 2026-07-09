@@ -69,6 +69,8 @@ const elBtnReload     = document.getElementById('btn-reload');
 const elBtnPrint      = document.getElementById('btn-print');
 const elBtnAbout      = document.getElementById('btn-about');
 const elBtnTheme      = document.getElementById('btn-theme');
+const elBtnMenu       = document.getElementById('btn-menu');
+const elDrawerPanel   = document.getElementById('drawer-panel');
 const elImgTheme      = document.getElementById('img_theme');
 const elBtnDismiss    = document.getElementById('btn-error-dismiss');
 const elContent       = document.getElementById('content');
@@ -110,15 +112,27 @@ function printCurrentDocument() {
     return;
   }
   window.print();
+  closeDrawer();
 }
 
 function openAbout() {
   elAboutVersion.textContent = APP_VERSION;
+  closeDrawer();
   elAboutModal.classList.remove('hidden');
 }
 
 function closeAbout() {
   elAboutModal.classList.add('hidden');
+}
+
+function toggleDrawer() {
+  elDrawerPanel.classList.toggle('hidden');
+  elBtnMenu.setAttribute('aria-expanded', String(!elDrawerPanel.classList.contains('hidden')));
+}
+
+function closeDrawer() {
+  elDrawerPanel.classList.add('hidden');
+  elBtnMenu.setAttribute('aria-expanded', 'false');
 }
 
 // Restore saved preference if any
@@ -337,10 +351,22 @@ elBtnReload.addEventListener('click', reloadFile);
 elBtnPrint.addEventListener('click', printCurrentDocument);
 elBtnAbout.addEventListener('click', openAbout);
 elBtnTheme.addEventListener('click', toggleTheme);
+elBtnMenu.addEventListener('click', (event) => {
+  event.stopPropagation();
+  toggleDrawer();
+});
 elBtnDismiss.addEventListener('click', hideError);
 
 document.addEventListener('contextmenu', (event) => {
   event.preventDefault();
+  event.stopPropagation();
+});
+
+document.addEventListener('click', () => {
+  if (!elDrawerPanel.classList.contains('hidden')) closeDrawer();
+});
+
+elDrawerPanel.addEventListener('click', (event) => {
   event.stopPropagation();
 });
 
