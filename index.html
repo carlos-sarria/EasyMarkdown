@@ -16,6 +16,7 @@
         <button id="btn-reload" title="Reload file (Ctrl+R)" class="hidden"><img src="/src-tauri/svg/refresh.svg" ></button>
         <button id="btn-open"   title="Open file (Ctrl+O)"><img src="/src-tauri/svg/open.svg" ></button>
         <button id="btn-print"  title="Print current document"><img src="/src-tauri/svg/print.svg" ></button>
+        <button id="btn-about"  title="About EasyMarkdown">About</button>
         <button id="btn-theme"  title="Toggle dark / light mode"><img id="img_theme" src="/src-tauri/svg/dark_mode.svg"></button>
       </div>
     </header>
@@ -51,6 +52,23 @@
       </div>
 
     </main>
+
+    <div id="about-modal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="about-title">
+      <div id="about-content">
+        <h2 id="about-title">About EasyMarkdown</h2>
+        <p>A lightweight, distraction-free Markdown viewer for Windows.</p>
+        <dl>
+          <dt>Version</dt>
+          <dd id="about-version">1.0.0</dd>
+          <dt>Build</dt>
+          <dd>Windows / Tauri / Vite</dd>
+        </dl>
+        <p>Designed for reading Markdown files quickly, with clean printing and no editor clutter.</p>
+        <div id="about-actions">
+          <button id="btn-about-close">Close</button>
+        </div>
+      </div>
+    </div>
 
   </div>
   <script type="module" src="/src/main.js"></script>

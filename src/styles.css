@@ -156,6 +156,10 @@ button:active { opacity: 0.8; }
   flex-shrink: 0;
 }
 
+#toolbar-actions button {
+  min-width: 56px;
+}
+
 #toolbar-actions img {
   width: 16px;
   height: 16px;

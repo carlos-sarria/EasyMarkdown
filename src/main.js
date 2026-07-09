@@ -67,10 +67,14 @@ const elBtnOpen       = document.getElementById('btn-open');
 const elBtnOpenWelcome= document.getElementById('btn-open-welcome');
 const elBtnReload     = document.getElementById('btn-reload');
 const elBtnPrint      = document.getElementById('btn-print');
+const elBtnAbout      = document.getElementById('btn-about');
 const elBtnTheme      = document.getElementById('btn-theme');
 const elImgTheme      = document.getElementById('img_theme');
 const elBtnDismiss    = document.getElementById('btn-error-dismiss');
 const elContent       = document.getElementById('content');
+const elAboutModal    = document.getElementById('about-modal');
+const elAboutClose    = document.getElementById('btn-about-close');
+const elAboutVersion  = document.getElementById('about-version');
 
 const themeIconDark  = new URL('../src-tauri/svg/dark_mode.svg', import.meta.url).href;
 const themeIconLight = new URL('../src-tauri/svg/light_mode.svg', import.meta.url).href;
@@ -81,6 +85,10 @@ const hljsStyleEl = document.createElement('style');
 document.head.appendChild(hljsStyleEl);
 
 // ── Theme management ──────────────────────────────────────────────────────
+
+const APP_NAME = 'EasyMarkdown';
+const APP_VERSION = '1.0.0';
+const APP_BUILD = 'Windows / Tauri / Vite';
 
 function applyTheme() {
   elHtml.dataset.theme     = isDark ? 'dark' : 'light';
@@ -102,6 +110,15 @@ function printCurrentDocument() {
     return;
   }
   window.print();
+}
+
+function openAbout() {
+  elAboutVersion.textContent = APP_VERSION;
+  elAboutModal.classList.remove('hidden');
+}
+
+function closeAbout() {
+  elAboutModal.classList.add('hidden');
 }
 
 // Restore saved preference if any
@@ -318,12 +335,19 @@ elBtnOpen.addEventListener('click', pickAndOpenFile);
 elBtnOpenWelcome.addEventListener('click', pickAndOpenFile);
 elBtnReload.addEventListener('click', reloadFile);
 elBtnPrint.addEventListener('click', printCurrentDocument);
+elBtnAbout.addEventListener('click', openAbout);
 elBtnTheme.addEventListener('click', toggleTheme);
 elBtnDismiss.addEventListener('click', hideError);
 
 document.addEventListener('contextmenu', (event) => {
   event.preventDefault();
   event.stopPropagation();
+});
+
+// About dialog
+elAboutClose.addEventListener('click', closeAbout);
+elAboutModal.addEventListener('click', (e) => {
+  if (e.target === elAboutModal) closeAbout();
 });
 
 // Tab click delegation — switch to tab on click, close on × click.
@@ -349,6 +373,10 @@ document.addEventListener('keydown', (e) => {
   if (mod && e.key === 'r') { e.preventDefault(); reloadFile(); return; }
   if (mod && e.key === 'p') { e.preventDefault(); printCurrentDocument(); return; }
   if (mod && e.key === 'w') { e.preventDefault(); if (activeIndex >= 0) closeTab(activeIndex); return; }
+  if (e.key === 'Escape' && !elAboutModal.classList.contains('hidden')) {
+    closeAbout();
+    return;
+  }
   // Ctrl+Tab / Ctrl+Shift+Tab to cycle tabs.
   if (mod && e.key === 'Tab' && tabs.length > 1) {
     e.preventDefault();
