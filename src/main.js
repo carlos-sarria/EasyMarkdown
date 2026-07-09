@@ -225,7 +225,7 @@ function switchTab(index) {
   elBtnReload.classList.remove('hidden');
 
   elContent.scrollTop = 0;
-  document.title = `${tab.filename} — EasyMD`;
+  document.title = `${tab.filename} — EasyMarkdown`;
 
   renderTabs();
 }
@@ -252,7 +252,7 @@ function showWelcome() {
   elBtnReload.classList.add('hidden');
   elFilePath.textContent = '';
   elFilePath.title = '';
-  document.title = 'EasyMD';
+  document.title = 'EasyMarkdown';
   renderTabs();
 }
 

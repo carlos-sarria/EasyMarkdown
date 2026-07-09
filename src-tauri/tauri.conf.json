@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "EasyMD",
+  "productName": "EasyMarkdown",
   "version": "1.0.0",
-  "identifier": "dev.easymd.viewer",
+  "identifier": "dev.easymarkdown.viewer",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "EasyMD v1.0.0",
+        "title": "EasyMarkdown v1.0.0",
         "width": 1200,
         "height": 800,
         "minWidth": 600,

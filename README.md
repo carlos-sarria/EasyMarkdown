@@ -1,4 +1,4 @@
-# EasyMD
+# EasyMarkdown
 
 A lightweight, cross-platform Markdown viewer built with **Tauri v2** (Rust backend) and a **vanilla JS + Vite** frontend. No framework, no Electron overhead — the OS's native WebView renders the frontend.
 
@@ -16,7 +16,7 @@ A lightweight, cross-platform Markdown viewer built with **Tauri v2** (Rust back
 ## Repository layout
 
 ```
-EasyMD/
+EasyMarkdown/
 ├── index.html              # App shell — loaded by Tauri's WebView
 ├── package.json            # JS dependencies and npm scripts
 ├── vite.config.js          # Vite bundler config (Tauri v2 standard)
