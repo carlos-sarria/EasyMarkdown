@@ -27,7 +27,7 @@
      showguides="true"
      inkscape:zoom="0.771875"
      inkscape:cx="132.79352"
-     inkscape:cy="516.2753"
+     inkscape:cy="515.62753"
      inkscape:window-width="2560"
      inkscape:window-height="1494"
      inkscape:window-x="-11"
@@ -46,16 +46,25 @@
        id="guide8"
        inkscape:locked="false" />
   </sodipodi:namedview>
-  <path
-     id="path4"
-     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.96412;stroke-dasharray:none;stroke-opacity:1"
-     d="m 286.41642,294.5663 v 720.2938 h 184.4219 V 573.47692 L 655.26018,814.26537 839.6772,573.47692 v 40.1331 337.10188 H 655.26018 L 931.89055,1269.7555 1208.5209,950.7119 H 1024.0991 V 613.61002 294.5663 H 839.6772 L 655.26018,535.3497 470.83832,294.5663 Z"
-     inkscape:label="MD"
-     sodipodi:nodetypes="cccccccccccccccccc" />
+  <rect
+     style="opacity:0.98;fill:#ffffff;stroke-width:1.00039;paint-order:fill markers stroke;stroke:none;fill-opacity:1"
+     id="rect1"
+     width="1323.52"
+     height="1323.52"
+     x="-10"
+     y="-5"
+     rx="6.4625001"
+     ry="6.4625001" />
   <path
      id="rect7"
      style="color:#000000;opacity:0.98;fill:#000000;stroke-width:1.96333;-inkscape-stroke:none;paint-order:fill markers stroke"
      d="m 94.99904,42.142227 c -43.293788,0 -80.239928,38.58582 -80.239928,83.806913 l -10e-7,1061.62176 c 0,45.2211 36.946141,83.8069 80.239929,83.8069 H 651.75998 V 1131.6996 H 148.48909 V 181.82042 H 1155.0309 v 640.04496 h 133.73 V 125.94914 c 0,-45.221093 -36.9462,-83.806913 -80.24,-83.806913 z"
      sodipodi:nodetypes="sssscccccccsss"
      inkscape:label="border" />
+  <path
+     id="path4"
+     style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.96412;stroke-dasharray:none;stroke-opacity:1"
+     d="m 286.41642,294.5663 v 720.2938 h 184.4219 V 573.47692 L 655.26018,814.26537 839.6772,573.47692 v 40.1331 337.10188 H 655.26018 L 931.89055,1269.7555 1208.5209,950.7119 H 1024.0991 V 613.61002 294.5663 H 839.6772 L 655.26018,535.3497 470.83832,294.5663 Z"
+     inkscape:label="MD"
+     sodipodi:nodetypes="cccccccccccccccccc" />
 </svg>
