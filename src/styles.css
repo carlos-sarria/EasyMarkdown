@@ -229,6 +229,8 @@ button:active { opacity: 0.8; }
 
 #about-content {
   width: min(560px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   background: var(--surface);
   color: var(--text);
   border-radius: 18px;
@@ -242,10 +244,25 @@ button:active { opacity: 0.8; }
   margin-bottom: 16px;
 }
 
+#about-content h3 {
+  margin-top: 18px;
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
 #about-content p,
 #about-content dl,
 #about-content dd {
   color: var(--text);
+}
+
+#about-content ul {
+  margin: 0 0 16px;
+  padding-left: 20px;
+}
+
+#about-content li {
+  margin: 4px 0;
 }
 
 #about-content dl {

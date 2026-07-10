@@ -160,20 +160,6 @@ function releaseMarkdownImageBlobUrls() {
   markdownImageBlobUrls.clear();
 }
 
-function registerMarkdownImageDiagnostics() {
-  elMarkdownBody.addEventListener('error', (event) => {
-    const img = event.target;
-    if (!(img instanceof HTMLImageElement)) return;
-
-    const original = img.dataset.easymdOriginalSrc || '(unknown)';
-    const resolved = img.dataset.easymdResolvedSrc || img.currentSrc || img.src || '(unknown)';
-    const docPath = img.dataset.easymdDocPath || '(unknown)';
-
-    showError(`Image failed to load. Original: ${original} | Resolved: ${resolved} | Markdown file: ${docPath}`);
-    console.warn('EasyMarkdown image load failed', { original, resolved, docPath });
-  }, true);
-}
-
 // ── Utility ───────────────────────────────────────────────────────────────
 
 /** Escape HTML entities so filenames/titles don't break the tab DOM. */
@@ -185,6 +171,24 @@ function escapeHtml(str) {
 
 function isExternalSrc(src) {
   return /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(src);
+}
+
+function normalizeWindowsAbsolutePath(src) {
+  if (typeof src !== 'string') return null;
+  const trimmed = src.trim();
+  if (!trimmed) return null;
+
+  // Drive-letter absolute paths like C:/foo/bar or C:\foo\bar.
+  if (/^[a-z]:[\\/]/i.test(trimmed)) {
+    return trimmed.replace(/\\/g, '/');
+  }
+
+  // UNC paths like \\server\share\file.png.
+  if (/^\\\\[^\\]+\\[^\\]+/i.test(trimmed)) {
+    return trimmed.replace(/\\/g, '/');
+  }
+
+  return null;
 }
 
 function fileUrlToPath(fileUrl) {
@@ -204,6 +208,10 @@ function resolveMarkdownLocalPath(src, markdownPath) {
   const trimmed = src.trim();
   if (!trimmed) return null;
   if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return null;
+
+  const windowsAbsolute = normalizeWindowsAbsolutePath(trimmed);
+  if (windowsAbsolute) return windowsAbsolute;
+
   if (isExternalSrc(trimmed)) return null;
 
   try {
@@ -242,9 +250,7 @@ async function hydrateMarkdownImages() {
       const blobUrl = URL.createObjectURL(blob);
       markdownImageBlobUrls.add(blobUrl);
       img.setAttribute('src', blobUrl);
-      img.dataset.easymdResolvedSrc = localPath;
     } catch {
-      img.dataset.easymdResolvedSrc = localPath;
       img.setAttribute('src', convertFileSrc(localPath));
     }
   }
@@ -318,10 +324,6 @@ function parseMarkdown(content, markdownPath) {
     const originalSrc = img.getAttribute('src');
     const localPath = resolveMarkdownLocalPath(originalSrc, markdownPath);
     const resolvedSrc = resolveMarkdownImageSrc(originalSrc, markdownPath);
-
-    img.dataset.easymdDocPath = markdownPath;
-    img.dataset.easymdOriginalSrc = originalSrc ?? '';
-    img.dataset.easymdResolvedSrc = resolvedSrc ?? '';
 
     if (localPath) {
       img.dataset.easymdLocalPath = localPath;
@@ -565,8 +567,6 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e)
 // ── Async initialisation ──────────────────────────────────────────────────
 
 async function init() {
-  registerMarkdownImageDiagnostics();
-
   // 1. Drag-and-drop via Tauri webview event.
   try {
     const webview = getCurrentWebview();
