@@ -19,7 +19,7 @@
  * ─────────────────────────────────────────────────────────────────────────
  */
 
-import { invoke }              from '@tauri-apps/api/core';
+import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { readTextFile }        from '@tauri-apps/plugin-fs';
 import { listen }              from '@tauri-apps/api/event';
@@ -160,15 +160,54 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function isExternalSrc(src) {
+  return /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(src);
+}
+
+function fileUrlToPath(fileUrl) {
+  const decodedPath = decodeURIComponent(fileUrl.pathname);
+  if (/^\/[a-z]:/i.test(decodedPath)) {
+    return decodedPath.slice(1).replace(/\//g, '\\');
+  }
+  if (fileUrl.hostname) {
+    return `\\\\${fileUrl.hostname}${decodedPath.replace(/\//g, '\\')}`;
+  }
+  return decodedPath;
+}
+
+function resolveMarkdownImageSrc(src, markdownPath) {
+  if (typeof src !== 'string' || typeof markdownPath !== 'string') return src;
+
+  const trimmed = src.trim();
+  if (!trimmed) return src;
+
+  if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return src;
+
+  if (isExternalSrc(trimmed)) return src;
+
+  try {
+    const baseFileUrl = new URL(`file:///${markdownPath.replace(/\\/g, '/')}`);
+    const resolvedFileUrl = new URL(trimmed, baseFileUrl);
+    if (resolvedFileUrl.protocol !== 'file:') return src;
+
+    const localPath = fileUrlToPath(resolvedFileUrl);
+    const assetUrl = convertFileSrc(localPath);
+    return `${assetUrl}${resolvedFileUrl.search}${resolvedFileUrl.hash}`;
+  } catch {
+    return src;
+  }
+}
+
 // ── Markdown parsing ──────────────────────────────────────────────────────
 
 /**
  * Parse raw markdown text into highlighted HTML.
  * Pure function — no DOM side effects.
  * @param {string} content
+ * @param {string} markdownPath
  * @returns {string}
  */
-function parseMarkdown(content) {
+function parseMarkdown(content, markdownPath) {
   let html;
   try {
     html = marked.parse(content);
@@ -194,6 +233,13 @@ function parseMarkdown(content) {
       if (language) block.classList.add(`language-${language}`);
     }
   });
+
+  tmp.querySelectorAll('img[src]').forEach((img) => {
+    const originalSrc = img.getAttribute('src');
+    const resolvedSrc = resolveMarkdownImageSrc(originalSrc, markdownPath);
+    if (resolvedSrc) img.setAttribute('src', resolvedSrc);
+  });
+
   return tmp.innerHTML;
 }
 
@@ -300,7 +346,7 @@ async function openFileAsTab(path) {
   hideError();
   try {
     const content = await readTextFile(path);
-    const html = parseMarkdown(content);
+    const html = parseMarkdown(content, path);
     const filename = path.replace(/\\/g, '/').split('/').pop() ?? path;
 
     // Already open? Refresh content and switch to it.

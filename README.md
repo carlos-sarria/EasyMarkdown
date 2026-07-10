@@ -1,5 +1,7 @@
 # EasyMarkdown
 
+![EasyMarkdown](src-tauri/icons/icon.png)
+
 A lightweight, cross-platform Markdown viewer built with **Tauri v2** (Rust backend) and a **vanilla JS + Vite** frontend. No framework, no Electron overhead — the OS's native WebView renders the frontend.
 
 ---
