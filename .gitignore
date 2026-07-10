@@ -6,3 +6,4 @@ src-tauri/Cargo.lock
 node_modules/
 src-tauri/icons/
 dist/
+scripts/
