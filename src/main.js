@@ -21,7 +21,7 @@
 
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
-import { readTextFile }        from '@tauri-apps/plugin-fs';
+import { readFile, readTextFile } from '@tauri-apps/plugin-fs';
 import { listen }              from '@tauri-apps/api/event';
 import { getCurrentWebview }   from '@tauri-apps/api/webview';
 import { marked }              from 'marked';
@@ -151,6 +151,29 @@ function hideError() {
   elErrorBanner.classList.add('hidden');
 }
 
+const markdownImageBlobUrls = new Set();
+
+function releaseMarkdownImageBlobUrls() {
+  for (const blobUrl of markdownImageBlobUrls) {
+    URL.revokeObjectURL(blobUrl);
+  }
+  markdownImageBlobUrls.clear();
+}
+
+function registerMarkdownImageDiagnostics() {
+  elMarkdownBody.addEventListener('error', (event) => {
+    const img = event.target;
+    if (!(img instanceof HTMLImageElement)) return;
+
+    const original = img.dataset.easymdOriginalSrc || '(unknown)';
+    const resolved = img.dataset.easymdResolvedSrc || img.currentSrc || img.src || '(unknown)';
+    const docPath = img.dataset.easymdDocPath || '(unknown)';
+
+    showError(`Image failed to load. Original: ${original} | Resolved: ${resolved} | Markdown file: ${docPath}`);
+    console.warn('EasyMarkdown image load failed', { original, resolved, docPath });
+  }, true);
+}
+
 // ── Utility ───────────────────────────────────────────────────────────────
 
 /** Escape HTML entities so filenames/titles don't break the tab DOM. */
@@ -166,17 +189,74 @@ function isExternalSrc(src) {
 
 function fileUrlToPath(fileUrl) {
   const decodedPath = decodeURIComponent(fileUrl.pathname);
-  if (/^\/[a-z]:/i.test(decodedPath)) {
-    return decodedPath.slice(1).replace(/\//g, '\\');
-  }
   if (fileUrl.hostname) {
-    return `\\\\${fileUrl.hostname}${decodedPath.replace(/\//g, '\\')}`;
+    return `//${fileUrl.hostname}${decodedPath}`;
+  }
+  if (/^\/[a-z]:/i.test(decodedPath)) {
+    return decodedPath.slice(1);
   }
   return decodedPath;
 }
 
+function resolveMarkdownLocalPath(src, markdownPath) {
+  if (typeof src !== 'string' || typeof markdownPath !== 'string') return null;
+
+  const trimmed = src.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return null;
+  if (isExternalSrc(trimmed)) return null;
+
+  try {
+    const baseFileUrl = new URL(`file:///${markdownPath.replace(/\\/g, '/')}`);
+    const resolvedFileUrl = new URL(trimmed, baseFileUrl);
+    if (resolvedFileUrl.protocol !== 'file:') return null;
+    return fileUrlToPath(resolvedFileUrl);
+  } catch {
+    return null;
+  }
+}
+
+function getImageMimeTypeFromPath(path) {
+  if (typeof path !== 'string') return 'application/octet-stream';
+  const lower = path.toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.gif')) return 'image/gif';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.svg')) return 'image/svg+xml';
+  if (lower.endsWith('.bmp')) return 'image/bmp';
+  if (lower.endsWith('.ico')) return 'image/x-icon';
+  return 'application/octet-stream';
+}
+
+async function hydrateMarkdownImages() {
+  const images = Array.from(elMarkdownBody.querySelectorAll('img[data-easymd-local-path]'));
+  for (const img of images) {
+    const localPath = img.dataset.easymdLocalPath;
+    if (!localPath) continue;
+
+    try {
+      const bytes = await readFile(localPath);
+      const mime = getImageMimeTypeFromPath(localPath);
+      const blob = new Blob([bytes], { type: mime });
+      const blobUrl = URL.createObjectURL(blob);
+      markdownImageBlobUrls.add(blobUrl);
+      img.setAttribute('src', blobUrl);
+      img.dataset.easymdResolvedSrc = localPath;
+    } catch {
+      img.dataset.easymdResolvedSrc = localPath;
+      img.setAttribute('src', convertFileSrc(localPath));
+    }
+  }
+}
+
 function resolveMarkdownImageSrc(src, markdownPath) {
   if (typeof src !== 'string' || typeof markdownPath !== 'string') return src;
+
+  const localPath = resolveMarkdownLocalPath(src, markdownPath);
+  if (localPath) {
+    return convertFileSrc(localPath);
+  }
 
   const trimmed = src.trim();
   if (!trimmed) return src;
@@ -236,7 +316,19 @@ function parseMarkdown(content, markdownPath) {
 
   tmp.querySelectorAll('img[src]').forEach((img) => {
     const originalSrc = img.getAttribute('src');
+    const localPath = resolveMarkdownLocalPath(originalSrc, markdownPath);
     const resolvedSrc = resolveMarkdownImageSrc(originalSrc, markdownPath);
+
+    img.dataset.easymdDocPath = markdownPath;
+    img.dataset.easymdOriginalSrc = originalSrc ?? '';
+    img.dataset.easymdResolvedSrc = resolvedSrc ?? '';
+
+    if (localPath) {
+      img.dataset.easymdLocalPath = localPath;
+      img.removeAttribute('src');
+      return;
+    }
+
     if (resolvedSrc) img.setAttribute('src', resolvedSrc);
   });
 
@@ -296,7 +388,11 @@ function switchTab(index) {
   activeIndex = index;
   const tab = tabs[index];
 
+  releaseMarkdownImageBlobUrls();
   elMarkdownBody.innerHTML = tab.html;
+  hydrateMarkdownImages().catch((err) => {
+    showError(`Failed to load local images: ${err}`);
+  });
   elMarkdownBody.classList.remove('hidden');
   elWelcome.classList.add('hidden');
   elBtnReload.classList.remove('hidden');
@@ -324,6 +420,7 @@ function closeTab(index) {
 
 /** Show the welcome screen (no open files). */
 function showWelcome() {
+  releaseMarkdownImageBlobUrls();
   elMarkdownBody.classList.add('hidden');
   elWelcome.classList.remove('hidden');
   elBtnReload.classList.add('hidden');
@@ -468,6 +565,8 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e)
 // ── Async initialisation ──────────────────────────────────────────────────
 
 async function init() {
+  registerMarkdownImageDiagnostics();
+
   // 1. Drag-and-drop via Tauri webview event.
   try {
     const webview = getCurrentWebview();
