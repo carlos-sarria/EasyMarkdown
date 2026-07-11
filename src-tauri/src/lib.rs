@@ -59,6 +59,11 @@ fn tabs_file_path(app: &tauri::AppHandle) -> std::path::PathBuf {
 /// Save the ordered list of open tab paths to disk.
 #[tauri::command]
 fn save_tabs(app: tauri::AppHandle, paths: Vec<String>) {
+    if paths.is_empty() {
+        let _ = fs::remove_file(tabs_file_path(&app));
+        return;
+    }
+
     let json = serde_json::to_string(&paths).unwrap_or_default();
     let _ = fs::write(tabs_file_path(&app), json);
 }
