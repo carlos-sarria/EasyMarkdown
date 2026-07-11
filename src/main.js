@@ -343,8 +343,25 @@ function parseMarkdown(content, markdownPath) {
 
 /** Save the current tab paths to disk (Rust command). */
 async function persistTabs() {
-  await invoke('save_tabs', { paths: tabs.map((t) => t.path) }).catch(() => {});
+  try {
+    const result = await invoke('save_tabs', { paths: tabs.map((t) => t.path) });
+    if (result && typeof result === 'object') {
+      console.info('[tabs] persist result:', result);
+    }
+  } catch (err) {
+    console.warn('Failed to persist tabs:', err);
+    showError(`Failed to persist tabs: ${err}`);
+  }
 }
+
+// DevTools helper for diagnosing persistence location and behavior.
+window.easymdDebug = {
+  async tabsPath() {
+    const p = await invoke('get_tabs_file_path');
+    console.info('[tabs] backend tabs.json path:', p);
+    return p;
+  },
+};
 
 /** Re-open tabs that were saved from the previous session. */
 async function restoreTabs() {
@@ -418,9 +435,14 @@ async function closeTab(index) {
   tabs.splice(index, 1);
   if (tabs.length === 0) {
     activeIndex = -1;
-    showWelcome();
-    await persistTabs();
-    return;
+    try {
+      showWelcome();
+    } catch (err) {
+      console.warn('Failed to render welcome state:', err);
+    } finally {
+      await persistTabs();
+    }
+    return;s
   }
   // Move to the neighbour closer to the end of the old list.
   const next = Math.min(index, tabs.length - 1);
@@ -434,8 +456,10 @@ function showWelcome() {
   elMarkdownBody.classList.add('hidden');
   elWelcome.classList.remove('hidden');
   elBtnReload.classList.add('hidden');
-  elFilePath.textContent = '';
-  elFilePath.title = '';
+  if (elFilePath) {
+    elFilePath.textContent = '';
+    elFilePath.title = '';
+  }
   document.title = 'EasyMarkdown';
   renderTabs();
 }

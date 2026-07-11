@@ -154,6 +154,7 @@ button:active { opacity: 0.8; }
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 #toolbar-actions button {

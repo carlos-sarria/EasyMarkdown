@@ -5,6 +5,7 @@ use std::net::{TcpListener, TcpStream};
 use std::sync::mpsc;
 use std::sync::Mutex;
 use std::thread;
+use serde::Serialize;
 use tauri::Emitter;
 use tauri::Manager;
 
@@ -56,16 +57,63 @@ fn tabs_file_path(app: &tauri::AppHandle) -> std::path::PathBuf {
     dir
 }
 
+#[derive(Serialize)]
+struct SaveTabsDebug {
+    path: String,
+    action: String,
+}
+
+#[tauri::command]
+fn get_tabs_file_path(app: tauri::AppHandle) -> String {
+    tabs_file_path(&app).to_string_lossy().to_string()
+}
+
 /// Save the ordered list of open tab paths to disk.
 #[tauri::command]
-fn save_tabs(app: tauri::AppHandle, paths: Vec<String>) {
+fn save_tabs(app: tauri::AppHandle, paths: Vec<String>) -> Result<SaveTabsDebug, String> {
+    let path = tabs_file_path(&app);
+    let path_str = path.to_string_lossy().to_string();
+
     if paths.is_empty() {
-        let _ = fs::remove_file(tabs_file_path(&app));
-        return;
+        // Best effort: remove the persistence file when no tabs are open.
+        // If deletion fails (e.g. transient lock), truncate to an empty list
+        // so stale tabs are never restored on next launch.
+        match fs::remove_file(&path) {
+            Ok(()) => {
+                return Ok(SaveTabsDebug {
+                    path: path_str,
+                    action: "removed".to_string(),
+                });
+            }
+            Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
+                return Ok(SaveTabsDebug {
+                    path: path_str,
+                    action: "already-missing".to_string(),
+                });
+            }
+            Err(_) => {
+                if let Err(write_err) = fs::write(&path, "[]") {
+                    return Err(format!(
+                        "remove_file failed and fallback write failed for {}: {}",
+                        path_str, write_err
+                    ));
+                }
+                return Ok(SaveTabsDebug {
+                    path: path_str,
+                    action: "fallback-wrote-empty-array".to_string(),
+                });
+            }
+        }
     }
 
     let json = serde_json::to_string(&paths).unwrap_or_default();
-    let _ = fs::write(tabs_file_path(&app), json);
+    fs::write(&path, json)
+        .map_err(|err| format!("failed to write {}: {}", path_str, err))?;
+
+    Ok(SaveTabsDebug {
+        path: path_str,
+        action: "written".to_string(),
+    })
 }
 
 /// Return the previously saved list of open tab paths (may be empty).
@@ -166,7 +214,12 @@ pub fn run() {
         // Plugin: open URLs in the OS default browser → JS: @tauri-apps/plugin-opener
         .plugin(tauri_plugin_opener::init())
         // Register custom commands
-        .invoke_handler(tauri::generate_handler![get_initial_file, save_tabs, load_tabs])
+        .invoke_handler(tauri::generate_handler![
+            get_initial_file,
+            save_tabs,
+            load_tabs,
+            get_tabs_file_path
+        ])
         // Wire up single-instance IPC: forward paths received from secondary
         // instances to the frontend as "file-opened" events.
         .setup(move |app| {
