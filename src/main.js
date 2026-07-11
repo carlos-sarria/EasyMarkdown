@@ -342,8 +342,8 @@ function parseMarkdown(content, markdownPath) {
 // ── Tab persistence ──────────────────────────────────────────────────────
 
 /** Save the current tab paths to disk (Rust command). */
-function persistTabs() {
-  invoke('save_tabs', { paths: tabs.map((t) => t.path) }).catch(() => {});
+async function persistTabs() {
+  await invoke('save_tabs', { paths: tabs.map((t) => t.path) }).catch(() => {});
 }
 
 /** Re-open tabs that were saved from the previous session. */
@@ -414,18 +414,18 @@ function switchTab(index) {
 }
 
 /** Close the tab at `index` and switch to the nearest sibling. */
-function closeTab(index) {
+async function closeTab(index) {
   tabs.splice(index, 1);
   if (tabs.length === 0) {
     activeIndex = -1;
     showWelcome();
-    persistTabs();
+    await persistTabs();
     return;
   }
   // Move to the neighbour closer to the end of the old list.
   const next = Math.min(index, tabs.length - 1);
   switchTab(next);
-  persistTabs();
+  await persistTabs();
 }
 
 /** Show the welcome screen (no open files). */
@@ -461,14 +461,14 @@ async function openFileAsTab(path) {
     if (existingIdx >= 0) {
       tabs[existingIdx] = { path, html, filename };
       switchTab(existingIdx);
-      persistTabs();
+      await persistTabs();
       return;
     }
 
     // New tab.
     tabs.push({ path, html, filename });
     switchTab(tabs.length - 1);
-    persistTabs();
+    await persistTabs();
   } catch (err) {
     showError(`Failed to read "${path}": ${err}`);
   }
@@ -561,12 +561,12 @@ elAboutModal.addEventListener('click', (e) => {
 });
 
 // Tab click delegation — switch to tab on click, close on × click.
-elTabs.addEventListener('click', (e) => {
+elTabs.addEventListener('click', async (e) => {
   const closeBtn = e.target.closest('.tab-close');
   if (closeBtn) {
     e.stopPropagation();
     const idx = parseInt(closeBtn.dataset.close, 10);
-    if (!isNaN(idx)) closeTab(idx);
+    if (!isNaN(idx)) await closeTab(idx);
     return;
   }
   const tabEl = e.target.closest('.tab');
@@ -577,12 +577,12 @@ elTabs.addEventListener('click', (e) => {
 });
 
 // Keyboard shortcuts.
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', async (e) => {
   const mod = e.ctrlKey || e.metaKey;
   if (mod && e.key === 'o') { e.preventDefault(); pickAndOpenFile(); return; }
   if (mod && e.key === 'r') { e.preventDefault(); reloadFile(); return; }
   if (mod && e.key === 'p') { e.preventDefault(); printCurrentDocument(); return; }
-  if (mod && e.key === 'w') { e.preventDefault(); if (activeIndex >= 0) closeTab(activeIndex); return; }
+  if (mod && e.key === 'w') { e.preventDefault(); if (activeIndex >= 0) await closeTab(activeIndex); return; }
   if (e.key === 'Escape' && !elAboutModal.classList.contains('hidden')) {
     closeAbout();
     return;
