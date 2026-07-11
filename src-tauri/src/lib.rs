@@ -158,6 +158,8 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         // Plugin: read files from disk → JS: @tauri-apps/plugin-fs
         .plugin(tauri_plugin_fs::init())
+        // Plugin: open URLs in the OS default browser → JS: @tauri-apps/plugin-opener
+        .plugin(tauri_plugin_opener::init())
         // Register custom commands
         .invoke_handler(tauri::generate_handler![get_initial_file, save_tabs, load_tabs])
         // Wire up single-instance IPC: forward paths received from secondary

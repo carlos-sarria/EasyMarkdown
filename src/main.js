@@ -22,6 +22,7 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { readFile, readTextFile } from '@tauri-apps/plugin-fs';
+import { openPath, openUrl }    from '@tauri-apps/plugin-opener';
 import { listen }              from '@tauri-apps/api/event';
 import { getCurrentWebview }   from '@tauri-apps/api/webview';
 import { marked }              from 'marked';
@@ -501,6 +502,37 @@ elBtnMenu.addEventListener('click', (event) => {
   toggleDrawer();
 });
 elBtnDismiss.addEventListener('click', hideError);
+
+elMarkdownBody.addEventListener('click', async (event) => {
+  const anchor = event.target.closest('a[href]');
+  if (!anchor || !elMarkdownBody.contains(anchor)) return;
+
+  const href = anchor.getAttribute('href')?.trim();
+  if (!href) return;
+  if (href.startsWith('#')) return;
+
+  event.preventDefault();
+
+  const currentPath = tabs[activeIndex]?.path;
+  const localPath = currentPath ? resolveMarkdownLocalPath(href, currentPath) : null;
+
+  try {
+    if (localPath) {
+      if (MD_EXTENSIONS.test(localPath)) {
+        await openFileAsTab(localPath);
+      } else {
+        await openPath(localPath);
+      }
+      return;
+    }
+
+    if (isExternalSrc(href)) {
+      await openUrl(href);
+    }
+  } catch (err) {
+    showError(`Could not open link: ${err}`);
+  }
+});
 
 document.addEventListener('contextmenu', (event) => {
   event.preventDefault();
