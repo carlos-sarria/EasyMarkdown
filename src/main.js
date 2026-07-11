@@ -58,6 +58,7 @@ let activeIndex = -1;
 
 const elHtml          = document.documentElement;
 const elTabs          = document.getElementById('tabs');
+const elTabsBar       = document.getElementById('tabs-bar');
 const elFilePath      = document.getElementById('file-path');
 const elWelcome       = document.getElementById('welcome');
 const elMarkdownBody  = document.getElementById('markdown-body');
@@ -368,7 +369,13 @@ async function restoreTabs() {
 
 /** Rebuild the tab bar DOM from the `tabs` array. */
 function renderTabs() {
-  if (tabs.length === 0) { elTabs.innerHTML = ''; return; }
+  if (tabs.length === 0) {
+    elTabs.innerHTML = '';
+    elTabsBar.classList.add('hidden');
+    return;
+  }
+
+  elTabsBar.classList.remove('hidden');
 
   elTabs.innerHTML = tabs
     .map(
