@@ -344,24 +344,12 @@ function parseMarkdown(content, markdownPath) {
 /** Save the current tab paths to disk (Rust command). */
 async function persistTabs() {
   try {
-    const result = await invoke('save_tabs', { paths: tabs.map((t) => t.path) });
-    if (result && typeof result === 'object') {
-      console.info('[tabs] persist result:', result);
-    }
+    await invoke('save_tabs', { paths: tabs.map((t) => t.path) });
   } catch (err) {
     console.warn('Failed to persist tabs:', err);
     showError(`Failed to persist tabs: ${err}`);
   }
 }
-
-// DevTools helper for diagnosing persistence location and behavior.
-window.easymdDebug = {
-  async tabsPath() {
-    const p = await invoke('get_tabs_file_path');
-    console.info('[tabs] backend tabs.json path:', p);
-    return p;
-  },
-};
 
 /** Re-open tabs that were saved from the previous session. */
 async function restoreTabs() {
