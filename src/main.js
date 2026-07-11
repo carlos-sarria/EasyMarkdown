@@ -47,9 +47,12 @@ let isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
 /**
  * Currently open tabs.
- * @type {{ path: string, html: string, filename: string }[]}
+ * @type {{ path: string, html: string, filename: string, source: string }[]}
  */
 let tabs = [];
+
+const AUTO_REFRESH_MS = 1200;
+let autoRefreshInFlight = false;
 
 /** Index into tabs[]; -1 when no files are open. */
 let activeIndex = -1;
@@ -67,7 +70,6 @@ const elErrorBanner   = document.getElementById('error-banner');
 const elErrorMessage  = document.getElementById('error-message');
 const elBtnOpen       = document.getElementById('btn-open');
 const elBtnOpenWelcome= document.getElementById('btn-open-welcome');
-const elBtnReload     = document.getElementById('btn-reload');
 const elBtnPrint      = document.getElementById('btn-print');
 const elBtnAbout      = document.getElementById('btn-about');
 const elBtnTheme      = document.getElementById('btn-theme');
@@ -410,7 +412,6 @@ function switchTab(index) {
   });
   elMarkdownBody.classList.remove('hidden');
   elWelcome.classList.add('hidden');
-  elBtnReload.classList.remove('hidden');
 
   elContent.scrollTop = 0;
   document.title = `${tab.filename} — EasyMarkdown`;
@@ -430,7 +431,7 @@ async function closeTab(index) {
     } finally {
       await persistTabs();
     }
-    return;s
+    return;
   }
   // Move to the neighbour closer to the end of the old list.
   const next = Math.min(index, tabs.length - 1);
@@ -443,7 +444,6 @@ function showWelcome() {
   releaseMarkdownImageBlobUrls();
   elMarkdownBody.classList.add('hidden');
   elWelcome.classList.remove('hidden');
-  elBtnReload.classList.add('hidden');
   if (elFilePath) {
     elFilePath.textContent = '';
     elFilePath.title = '';
@@ -471,14 +471,14 @@ async function openFileAsTab(path) {
     // Already open? Refresh content and switch to it.
     const existingIdx = tabs.findIndex((t) => t.path === path);
     if (existingIdx >= 0) {
-      tabs[existingIdx] = { path, html, filename };
+      tabs[existingIdx] = { path, html, filename, source: content };
       switchTab(existingIdx);
       await persistTabs();
       return;
     }
 
     // New tab.
-    tabs.push({ path, html, filename });
+    tabs.push({ path, html, filename, source: content });
     switchTab(tabs.length - 1);
     await persistTabs();
   } catch (err) {
@@ -503,16 +503,40 @@ async function pickAndOpenFile() {
   }
 }
 
-/** Re-read the active tab's file from disk (useful for live-editing). */
-async function reloadFile() {
-  if (activeIndex >= 0) await openFileAsTab(tabs[activeIndex].path);
+/** Refresh the active tab automatically when its source file changes. */
+async function refreshActiveTabIfChanged() {
+  if (activeIndex < 0 || document.hidden || autoRefreshInFlight) return;
+
+  const idx = activeIndex;
+  const tab = tabs[idx];
+  if (!tab) return;
+
+  autoRefreshInFlight = true;
+  try {
+    const latest = await readTextFile(tab.path);
+    if (activeIndex !== idx) return;
+    if (latest === tab.source) return;
+
+    tabs[idx] = {
+      ...tab,
+      source: latest,
+      html: parseMarkdown(latest, tab.path),
+    };
+
+    const previousScroll = elContent.scrollTop;
+    switchTab(idx);
+    elContent.scrollTop = previousScroll;
+  } catch {
+    // Ignore transient read errors while files are being edited/saved.
+  } finally {
+    autoRefreshInFlight = false;
+  }
 }
 
 // ── Event listeners ───────────────────────────────────────────────────────
 
 elBtnOpen.addEventListener('click', pickAndOpenFile);
 elBtnOpenWelcome.addEventListener('click', pickAndOpenFile);
-elBtnReload.addEventListener('click', reloadFile);
 elBtnPrint.addEventListener('click', printCurrentDocument);
 elBtnAbout.addEventListener('click', openAbout);
 elBtnTheme.addEventListener('click', toggleTheme);
@@ -592,7 +616,6 @@ elTabs.addEventListener('click', async (e) => {
 document.addEventListener('keydown', async (e) => {
   const mod = e.ctrlKey || e.metaKey;
   if (mod && e.key === 'o') { e.preventDefault(); pickAndOpenFile(); return; }
-  if (mod && e.key === 'r') { e.preventDefault(); reloadFile(); return; }
   if (mod && e.key === 'p') { e.preventDefault(); printCurrentDocument(); return; }
   if (mod && e.key === 'w') { e.preventDefault(); if (activeIndex >= 0) await closeTab(activeIndex); return; }
   if (e.key === 'Escape' && !elAboutModal.classList.contains('hidden')) {
@@ -614,6 +637,10 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e)
     applyTheme();
   }
 });
+
+setInterval(() => {
+  refreshActiveTabIfChanged().catch(() => {});
+}, AUTO_REFRESH_MS);
 
 // ── Async initialisation ──────────────────────────────────────────────────
 
