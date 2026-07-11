@@ -81,6 +81,9 @@ const elContent       = document.getElementById('content');
 const elAboutModal    = document.getElementById('about-modal');
 const elAboutClose    = document.getElementById('btn-about-close');
 const elAboutVersion  = document.getElementById('about-version');
+const elAutoRefreshIndicator = document.getElementById('auto-refresh-indicator');
+
+let autoRefreshIndicatorTimeoutId = null;
 
 const themeIconDark  = new URL('../src-tauri/svg/dark_mode.svg', import.meta.url).href;
 const themeIconLight = new URL('../src-tauri/svg/light_mode.svg', import.meta.url).href;
@@ -137,6 +140,21 @@ function toggleDrawer() {
 function closeDrawer() {
   elDrawerPanel.classList.add('hidden');
   elBtnMenu.setAttribute('aria-expanded', 'false');
+}
+
+function flashAutoRefreshIndicator() {
+  if (!elAutoRefreshIndicator) return;
+
+  elAutoRefreshIndicator.classList.add('show');
+
+  if (autoRefreshIndicatorTimeoutId) {
+    clearTimeout(autoRefreshIndicatorTimeoutId);
+  }
+
+  autoRefreshIndicatorTimeoutId = setTimeout(() => {
+    elAutoRefreshIndicator.classList.remove('show');
+    autoRefreshIndicatorTimeoutId = null;
+  }, 950);
 }
 
 // Restore saved preference if any
@@ -444,6 +462,7 @@ function showWelcome() {
   releaseMarkdownImageBlobUrls();
   elMarkdownBody.classList.add('hidden');
   elWelcome.classList.remove('hidden');
+  elAutoRefreshIndicator?.classList.remove('show');
   if (elFilePath) {
     elFilePath.textContent = '';
     elFilePath.title = '';
@@ -526,6 +545,7 @@ async function refreshActiveTabIfChanged() {
     const previousScroll = elContent.scrollTop;
     switchTab(idx);
     elContent.scrollTop = previousScroll;
+    flashAutoRefreshIndicator();
   } catch {
     // Ignore transient read errors while files are being edited/saved.
   } finally {

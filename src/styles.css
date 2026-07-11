@@ -124,11 +124,34 @@ button:active { opacity: 0.8; }
   height: var(--toolbar-h);
   display: flex;
   align-items: center;
+  position: relative;
   gap: 8px;
   padding: 0 12px;
   background: var(--surface);
   z-index: 100;
   transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+#auto-refresh-indicator {
+  position: absolute;
+  right: 56px;
+  top: 50%;
+  transform: translateY(-50%) translateX(4px);
+  opacity: 0;
+  pointer-events: none;
+  font-size: 11px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-hover);
+  color: var(--text-muted);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+#auto-refresh-indicator.show {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
 }
 
 #app-name {
