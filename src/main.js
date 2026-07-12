@@ -79,6 +79,7 @@ const elImgTheme      = document.getElementById('img_theme');
 const elBtnDismiss    = document.getElementById('btn-error-dismiss');
 const elContent       = document.getElementById('content');
 const elAboutModal    = document.getElementById('about-modal');
+const elAboutContent  = document.getElementById('about-content');
 const elAboutClose    = document.getElementById('btn-about-close');
 const elAboutVersion  = document.getElementById('about-version');
 const elAutoRefreshIndicator = document.getElementById('auto-refresh-indicator');
@@ -614,6 +615,24 @@ elDrawerPanel.addEventListener('click', (event) => {
 elAboutClose.addEventListener('click', closeAbout);
 elAboutModal.addEventListener('click', (e) => {
   if (e.target === elAboutModal) closeAbout();
+});
+
+elAboutContent.addEventListener('click', async (event) => {
+  const anchor = event.target.closest('a[href]');
+  if (!anchor || !elAboutContent.contains(anchor)) return;
+
+  const href = anchor.getAttribute('href')?.trim();
+  if (!href || href.startsWith('#')) return;
+
+  event.preventDefault();
+
+  if (isExternalSrc(href)) {
+    try {
+      await openUrl(href);
+    } catch (err) {
+      showError(`Could not open link: ${err}`);
+    }
+  }
 });
 
 // Tab click delegation — switch to tab on click, close on × click.
