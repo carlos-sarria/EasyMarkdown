@@ -378,6 +378,11 @@ button:active { opacity: 0.8; }
 
 .tab:hover { background: var(--surface-hover); }
 
+.tab.stale .tab-label {
+  color: var(--error-text);
+  text-decoration: line-through;
+}
+
 .tab.active {
   color: var(--text);
   background: var(--bg);

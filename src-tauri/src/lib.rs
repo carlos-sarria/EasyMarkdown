@@ -43,6 +43,12 @@ fn get_initial_file(state: tauri::State<'_, AppState>) -> Option<String> {
     state.initial_file.lock().unwrap().take()
 }
 
+/// Returns true if the given filesystem path exists.
+#[tauri::command]
+fn path_exists(path: String) -> bool {
+    std::path::Path::new(&path).exists()
+}
+
 // ── Tab persistence ───────────────────────────────────────────────────────
 
 /// Returns the path to `tabs.json` inside the app's data directory.
@@ -175,7 +181,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_initial_file,
             save_tabs,
-            load_tabs
+            load_tabs,
+            path_exists
         ])
         // Wire up single-instance IPC: forward paths received from secondary
         // instances to the frontend as "file-opened" events.

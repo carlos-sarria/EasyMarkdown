@@ -12,6 +12,12 @@
  *    "fs:allow-read-text-file"
  *    "fs:allow-read-file"          // some versions need this too
  *
+ *  Custom commands:
+ *    get_initial_file   → returns the CLI argv[1] path once
+ *    save_tabs          → persists open tab paths
+ *    load_tabs          → restores persisted tab paths
+ *    path_exists        → checks whether a filesystem path exists
+ *
  *  CLI / OS file association (argv[1] → initial file):
  *    lib.rs reads std::env::args().nth(1), stores it in AppState, and exposes
  *    it via the `get_initial_file` command. The frontend calls this command
@@ -47,7 +53,7 @@ let isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
 /**
  * Currently open tabs.
- * @type {{ path: string, html: string, filename: string, source: string }[]}
+ * @type {{ path: string, html: string, filename: string, source: string, stale?: boolean }[]}
  */
 let tabs = [];
 
@@ -405,11 +411,14 @@ function renderTabs() {
 
   elTabs.innerHTML = tabs
     .map(
-      (t, i) =>
-        `<div class="tab${i === activeIndex ? ' active' : ''}" data-index="${i}" title="${escapeHtml(t.path)}">
+      (t, i) => {
+        const staleClass = t.stale ? ' stale' : '';
+        const tooltip = t.stale ? `${escapeHtml(t.path)} (file not found)` : escapeHtml(t.path);
+        return `<div class="tab${i === activeIndex ? ' active' : ''}${staleClass}" data-index="${i}" title="${tooltip}">
           <span class="tab-label">${escapeHtml(t.filename)}</span>
           <button class="tab-close" data-close="${i}">&times;</button>
-        </div>`
+        </div>`;
+      }
     )
     .join('');
 
@@ -533,6 +542,23 @@ async function refreshActiveTabIfChanged() {
 
   autoRefreshInFlight = true;
   try {
+    const stillExists = await invoke('path_exists', { path: tab.path });
+    if (activeIndex !== idx) return;
+
+    const wasStale = Boolean(tab.stale);
+    const isStale = !stillExists;
+
+    if (isStale) {
+      tabs[idx] = { ...tab, stale: true };
+      if (!wasStale) renderTabs();
+      return;
+    }
+
+    if (wasStale) {
+      tabs[idx] = { ...tab, stale: false };
+      renderTabs();
+    }
+
     const latest = await readTextFile(tab.path);
     if (activeIndex !== idx) return;
     if (latest === tab.source) return;
@@ -541,6 +567,7 @@ async function refreshActiveTabIfChanged() {
       ...tab,
       source: latest,
       html: parseMarkdown(latest, tab.path),
+      stale: false,
     };
 
     const previousScroll = elContent.scrollTop;
