@@ -13,6 +13,20 @@ A lightweight, cross-platform Markdown viewer built with **Tauri v2** (Rust back
 
 ---
 
+## Features
+
+- **Multiple tabs** — open several Markdown files at once; tabs persist across sessions.
+- **Recent files** — quick access to the last 10 opened files from the actions drawer.
+- **Auto-refresh** — detects when the active file changes on disk and updates the preview while preserving scroll position.
+- **Single-instance** — opening a file from the OS while the app is already running forwards it to the existing window.
+- **Dark / light theme** — manual toggle with OS-preference fallback; persisted in `localStorage`.
+- **Local images** — relative image references are resolved and rendered from disk.
+- **Drag and drop** — drop `.md` files (or any file) onto the window to open them.
+- **Print** — print the currently rendered document.
+- **Keyboard shortcuts** — `Ctrl+O` open, `Ctrl+W` close tab, `Ctrl+F` search, `Ctrl+Tab` / `Ctrl+Shift+Tab` cycle tabs.
+
+---
+
 ## Repository layout
 
 ```
@@ -20,23 +34,28 @@ EasyMarkdown/
 ├── index.html              # App shell — loaded by Tauri's WebView
 ├── package.json            # JS dependencies and npm scripts
 ├── vite.config.js          # Vite bundler config (Tauri v2 standard)
+├── README.md               # This file
 ├── src/
 │   ├── main.js             # All frontend logic (single entry point)
 │   └── styles.css          # All styles (CSS custom properties, no preprocessor)
-└── src-tauri/              # Rust/Tauri project (NOT created by this frontend)
+└── src-tauri/              # Rust/Tauri project
     ├── Cargo.toml
     ├── tauri.conf.json
+    ├── build.rs
     ├── capabilities/
     │   └── default.json    # Tauri capability grants (permissions)
+    ├── icons/              # Application and file-association icons
+    ├── svg/                # Toolbar / drawer icon assets
     └── src/
-        └── lib.rs          # Tauri builder, plugin registration, startup logic
+        ├── lib.rs          # Tauri builder, plugin registration, commands, single-instance IPC
+        └── main.rs         # Binary entry point
 ```
 
 ---
 
 ## Frontend architecture
 
-The entire frontend is a single-page application with no routing. State is minimal and kept in module-level variables in `src/main.js`.
+The frontend is a single-page application with no routing. State is kept in module-level variables in `src/main.js`.
 
 ### Rendering pipeline
 
@@ -44,10 +63,12 @@ The entire frontend is a single-page application with no routing. State is minim
 File path (string)
   └─→ readTextFile()          [tauri-plugin-fs]
         └─→ marked.parse()    [marked v13, GFM enabled]
-              └─→ renderer.code() hook
+              └─→ pre/code highlighting
                     └─→ hljs.highlight() / highlightAuto()   [highlight.js v11]
                           └─→ innerHTML of #markdown-body
 ```
+
+Local images referenced by Markdown are resolved relative to the document path, read via `readFile()`, and displayed through temporary `blob:` URLs.
 
 ### UI states
 
@@ -56,9 +77,9 @@ The app has two mutually exclusive visible states managed by toggling the `.hidd
 | State | Visible elements |
 |-------|-----------------|
 | No file open | `#welcome` |
-| File loaded | `#markdown-body`, `#btn-reload` in toolbar |
+| File loaded | `#markdown-body`, `#tabs-bar` |
 
-The `#drop-overlay` and `#error-banner` are overlays that can appear on top of either state.
+The `#drop-overlay`, `#error-banner`, and `#about-modal` are overlays that can appear on top of either state. The actions `#drawer-panel` slides open from the toolbar menu button.
 
 ### Theming
 
@@ -82,43 +103,36 @@ getCurrentWebview().onDragDropEvent((event) => { ... })
 ```
 
 Event payload `.type` values: `'over'`, `'drop'`, `'leave'`, `'cancel'`.  
-On `'drop'`, `event.payload.paths` is a `string[]` of dropped file paths.
+On `'drop'`, `event.payload.paths` is a `string[]` of dropped file paths. Markdown files are opened as tabs; if only non-Markdown files are dropped, the first one is opened.
 
 ---
 
 ## JS ↔ Rust interface
 
-This is the contract between the frontend and the Rust backend. **Both sides must agree on these names and payload shapes.**
-
 ### Custom commands (JS → Rust, via `invoke`)
 
 | Command | Return type | Description |
 |---------|------------|-------------|
-| `get_initial_file` | `string \| null` | Returns the file path captured from `argv[1]` at startup (CLI arg or OS file association), then clears it. Subsequent calls return `null`. Called once in `init()`. |
-
-Frontend calls with:
-```js
-import { invoke } from '@tauri-apps/api/core';
-const path = await invoke('get_initial_file'); // string | null
-if (path) loadFile(path);
-```
-
-Rust-side implementation is in `src-tauri/src/lib.rs` — see `get_initial_file` and `AppState`.
+| `get_initial_file` | `string \| null` | Returns the file path captured from `argv[1]` at startup (CLI arg or OS file association), then clears it. Called once in `init()`. |
+| `path_exists` | `boolean` | Returns `true` if the given filesystem path exists. Used by auto-refresh to mark stale tabs. |
+| `save_tabs` | — | Persists the ordered list of currently open tab paths to `tabs.json` in the app data directory. |
+| `load_tabs` | `string[]` | Restores the previously saved list of open tab paths. |
+| `save_recent` | — | Persists the recent files list to `recent.json`. |
+| `load_recent` | `string[]` | Restores the previously saved recent files list. |
 
 ### Events (Rust → JS)
 
 | Event name | Payload type | Description |
 |------------|-------------|-------------|
-| `file-opened` | `string` | Reserved for future use (e.g. file-watcher, re-open from tray). The frontend has a listener registered. Payload must be an absolute file path string. |
+| `file-opened` | `string` | Emitted when a secondary instance forwards a file path to the primary instance. The frontend opens the path as a new tab. |
 
 ### Tauri plugin APIs used directly from JS
-
-The frontend calls Tauri plugin APIs directly (no custom Rust wrapper needed):
 
 | JS import | Plugin | Rust registration |
 |-----------|--------|------------------|
 | `open` from `@tauri-apps/plugin-dialog` | `tauri-plugin-dialog` | `.plugin(tauri_plugin_dialog::init())` |
-| `readTextFile` from `@tauri-apps/plugin-fs` | `tauri-plugin-fs` | `.plugin(tauri_plugin_fs::init())` |
+| `readTextFile`, `readFile` from `@tauri-apps/plugin-fs` | `tauri-plugin-fs` | `.plugin(tauri_plugin_fs::init())` |
+| `openPath`, `openUrl` from `@tauri-apps/plugin-opener` | `tauri-plugin-opener` | `.plugin(tauri_plugin_opener::init())` |
 
 ---
 
@@ -130,9 +144,12 @@ These are the minimum changes needed in `src-tauri/` to wire up the frontend.
 
 ```toml
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri              = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
-tauri-plugin-fs = "2"
+tauri-plugin-fs     = "2"
+tauri-plugin-opener = "2"
+serde      = { version = "1", features = ["derive"] }
+serde_json = "1"
 ```
 
 ### `src/lib.rs`
@@ -149,19 +166,25 @@ fn get_initial_file(state: tauri::State<'_, AppState>) -> Option<String> {
     state.initial_file.lock().unwrap().take() // consumed once
 }
 
-pub fn run() {
-    let initial_file = std::env::args().nth(1)
-        .filter(|p| std::path::Path::new(p).exists());
-
-    tauri::Builder::default()
-        .manage(AppState { initial_file: Mutex::new(initial_file) })
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![get_initial_file])
-        .run(tauri::generate_context!())
-        .expect("error while running EasyMD");
+#[tauri::command]
+fn path_exists(path: String) -> bool {
+    std::path::Path::new(&path).exists()
 }
+
+#[tauri::command]
+fn save_tabs(app: tauri::AppHandle, paths: Vec<String>) { /* ... */ }
+
+#[tauri::command]
+fn load_tabs(app: tauri::AppHandle) -> Vec<String> { /* ... */ }
+
+#[tauri::command]
+fn save_recent(app: tauri::AppHandle, paths: Vec<String>) { /* ... */ }
+
+#[tauri::command]
+fn load_recent(app: tauri::AppHandle) -> Vec<String> { /* ... */ }
 ```
+
+The library also implements single-instance behaviour via a localhost TCP socket (`IPC_PORT = 34982`). A secondary instance forwards its `argv[1]` path to the primary instance and exits; the primary emits a `file-opened` event to open the file as a new tab.
 
 ### `capabilities/default.json`
 
@@ -169,12 +192,33 @@ pub fn run() {
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default capability",
+  "description": "Default capability for EasyMarkdown.",
   "windows": ["main"],
   "permissions": [
     "core:default",
     "dialog:allow-open",
-    "fs:allow-read-text-file"
+    "opener:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        { "url": "http://*" },
+        { "url": "https://*" },
+        { "url": "mailto:*" },
+        { "url": "tel:*" }
+      ]
+    },
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [{"path": "**"}]
+    },
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [{"path": "**"}]
+    }
   ]
 }
 ```
@@ -189,17 +233,32 @@ pub fn run() {
   },
   "app": {
     "windows": [{
-      "title": "EasyMD",
-      "width": 1024,
-      "height": 768,
+      "label": "main",
+      "title": "EasyMarkdown v1.0.0",
+      "width": 1200,
+      "height": 800,
+      "minWidth": 600,
+      "minHeight": 400,
+      "center": true,
+      "resizable": true,
       "decorations": true,
       "dragDropEnabled": true
     }]
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "fileAssociations": [
+      {
+        "ext": ["md", "markdown", "mkd", "mdown"],
+        "name": "Markdown",
+        "description": "Markdown document",
+        "role": "Viewer"
+      }
+    ]
   }
 }
 ```
-
-`dragDropEnabled: true` is **required** for the native drag-and-drop to work.
 
 ---
 
@@ -210,10 +269,11 @@ pub fn run() {
 | `@tauri-apps/api` | ^2 | Core Tauri JS API (events, webview) |
 | `@tauri-apps/plugin-dialog` | ^2 | OS file-open dialog |
 | `@tauri-apps/plugin-fs` | ^2 | Read files from the local filesystem |
+| `@tauri-apps/plugin-opener` | ^2.5.4 | Open local paths and external URLs |
 | `marked` | ^13 | Markdown → HTML parser (GFM-compliant) |
 | `highlight.js` | ^11 | Syntax highlighting for fenced code blocks |
 | `vite` | ^6 | Dev server + bundler (devDep) |
-| `@tauri-apps/cli` | ^2 | `npm run tauri` shortcut (devDep) |
+| `@tauri-apps/cli` | ^2.11.4 | `npm run tauri` shortcut (devDep) |
 
 ---
 
@@ -227,35 +287,33 @@ npm install
 npm run dev
 
 # Full Tauri dev build (starts Vite + compiles Rust + opens window)
-cargo tauri dev          # from src-tauri/
-# or
-npm run tauri -- dev     # from project root
+npm run tauri dev
 
 # Production build
-npm run tauri -- build
+npm run tauri build
 ```
 
 The Vite dev server listens on **port 1420** (hardcoded in `vite.config.js`). Tauri's `devUrl` must match this.
 
+---
 
 ## Create/Update Icons
 
-From the project root
+From the project root:
 
 ```bash
-cargo tauri icon src-tauri\svg\EasyMD.svg
+cargo tauri icon src-tauri/svg/EasyMD.svg
 ```
+
 ---
 
 ## Key design decisions
 
-**Vanilla JS, no framework.** The app has one screen, one file at a time, and no routing. React/Vue would add ~100 KB and meaningful complexity for zero benefit here.
+**Vanilla JS, no framework.** The app has one screen and no routing. React/Vue would add meaningful complexity and bundle size for little benefit here.
 
-**No custom Tauri `invoke()` commands.** The frontend uses the plugin APIs directly (`plugin-dialog`, `plugin-fs`). This keeps the Rust side minimal — it only needs to register the plugins and handle the startup file argument.
+**Plugin APIs used directly.** The frontend uses `plugin-dialog`, `plugin-fs`, and `plugin-opener` directly. Custom Rust commands are reserved for persistence and startup-file handling.
 
 **`?inline` CSS import for highlight.js themes.** Importing CSS as a string allows runtime theme swapping without DOM `<link>` manipulation, which would require special Vite config and risks a flash of unstyled content.
-
-**`color-mix()` for the drop overlay tint.** Requires Chrome 111+ / Edge 111+, which Tauri on Windows (WebView2) satisfies. If targeting older WebView2, replace with a hard-coded RGBA fallback.
 
 **`data-tauri-drag-region` on the toolbar.** When `decorations: false` is set in `tauri.conf.json` (custom titlebar), the toolbar becomes the window drag handle. With default decorations this attribute is inert but harmless.
 
