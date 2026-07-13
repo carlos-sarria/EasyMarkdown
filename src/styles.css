@@ -383,6 +383,18 @@ button:active { opacity: 0.8; }
   text-decoration: line-through;
 }
 
+.stale-message {
+  color: var(--error-text);
+  font-style: italic;
+  text-align: center;
+  margin-top: 48px;
+}
+
+.stale-message code {
+  font-style: normal;
+  word-break: break-all;
+}
+
 .tab.active {
   color: var(--text);
   background: var(--bg);

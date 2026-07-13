@@ -392,7 +392,7 @@ async function restoreTabs() {
   const existing = new Set(tabs.map((t) => t.path));
   for (const p of paths) {
     if (typeof p === 'string' && p.trim() && !existing.has(p)) {
-      await openFileAsTab(p).catch(() => {}); // silently skip missing files
+      await openFileAsTab(p, { allowStale: true });
     }
   }
 }
@@ -438,6 +438,11 @@ function switchTab(index) {
   hydrateMarkdownImages().catch((err) => {
     showError(`Failed to load local images: ${err}`);
   });
+
+  if (tab.stale && tab.html === '') {
+    elMarkdownBody.innerHTML = `<p class="stale-message">This file is no longer available:<br><code>${escapeHtml(tab.path)}</code></p>`;
+  }
+
   elMarkdownBody.classList.remove('hidden');
   elWelcome.classList.add('hidden');
 
@@ -488,30 +493,43 @@ const MD_EXTENSIONS = /\.(md|markdown|mkd|mdown|mdx|txt)$/i;
 /**
  * Read `path` from disk, parse to HTML, and open it as a tab.
  * If the file is already open it is refreshed and re-selected.
+ * If the file does not exist, a stale tab is created so the user can still
+ * see it was previously open.
  * @param {string} path
+ * @param {{ allowStale?: boolean }} [options]
  */
-async function openFileAsTab(path) {
+async function openFileAsTab(path, options = {}) {
   hideError();
+  const filename = path.replace(/\\/g, '/').split('/').pop() ?? path;
+
+  // Already open? Just switch to it (state will be refreshed by auto-refresh).
+  const existingIdx = tabs.findIndex((t) => t.path === path);
+  if (existingIdx >= 0) {
+    switchTab(existingIdx);
+    return;
+  }
+
   try {
     const content = await readTextFile(path);
     const html = parseMarkdown(content, path);
-    const filename = path.replace(/\\/g, '/').split('/').pop() ?? path;
 
-    // Already open? Refresh content and switch to it.
-    const existingIdx = tabs.findIndex((t) => t.path === path);
-    if (existingIdx >= 0) {
-      tabs[existingIdx] = { path, html, filename, source: content };
-      switchTab(existingIdx);
-      await persistTabs();
-      return;
-    }
-
-    // New tab.
-    tabs.push({ path, html, filename, source: content });
+    tabs.push({ path, html, filename, source: content, stale: false });
     switchTab(tabs.length - 1);
     await persistTabs();
   } catch (err) {
-    showError(`Failed to read "${path}": ${err}`);
+    if (options.allowStale) {
+      tabs.push({
+        path,
+        html: '',
+        filename,
+        source: '',
+        stale: true,
+      });
+      await persistTabs();
+      renderTabs();
+    } else {
+      showError(`Failed to read "${path}": ${err}`);
+    }
   }
 }
 
@@ -536,34 +554,37 @@ async function pickAndOpenFile() {
 async function refreshActiveTabIfChanged() {
   if (activeIndex < 0 || document.hidden || autoRefreshInFlight) return;
 
-  const idx = activeIndex;
-  const tab = tabs[idx];
-  if (!tab) return;
-
   autoRefreshInFlight = true;
   try {
-    const stillExists = await invoke('path_exists', { path: tab.path });
-    if (activeIndex !== idx) return;
+    let tabsChanged = false;
 
-    const wasStale = Boolean(tab.stale);
-    const isStale = !stillExists;
+    for (let i = 0; i < tabs.length; i++) {
+      const tab = tabs[i];
+      const stillExists = await invoke('path_exists', { path: tab.path });
+      const wasStale = Boolean(tab.stale);
+      const isStale = !stillExists;
 
-    if (isStale) {
-      tabs[idx] = { ...tab, stale: true };
-      if (!wasStale) renderTabs();
-      return;
+      if (isStale && !wasStale) {
+        tabs[i] = { ...tab, stale: true };
+        tabsChanged = true;
+        continue;
+      }
+
+      if (!isStale && wasStale) {
+        tabs[i] = { ...tab, stale: false };
+        tabsChanged = true;
+      }
     }
 
-    if (wasStale) {
-      tabs[idx] = { ...tab, stale: false };
-      renderTabs();
-    }
+    if (tabsChanged) renderTabs();
+
+    const tab = tabs[activeIndex];
+    if (!tab || tab.stale) return;
 
     const latest = await readTextFile(tab.path);
-    if (activeIndex !== idx) return;
     if (latest === tab.source) return;
 
-    tabs[idx] = {
+    tabs[activeIndex] = {
       ...tab,
       source: latest,
       html: parseMarkdown(latest, tab.path),
@@ -571,7 +592,7 @@ async function refreshActiveTabIfChanged() {
     };
 
     const previousScroll = elContent.scrollTop;
-    switchTab(idx);
+    switchTab(activeIndex);
     elContent.scrollTop = previousScroll;
     flashAutoRefreshIndicator();
   } catch {
