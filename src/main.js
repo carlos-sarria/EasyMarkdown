@@ -697,8 +697,13 @@ async function init() {
       } else if (type === 'drop') {
         elDropOverlay.classList.add('hidden');
         const paths = event.payload.paths ?? [];
-        const mdFile = paths.find((p) => MD_EXTENSIONS.test(p)) ?? paths[0];
-        if (mdFile) openFileAsTab(mdFile).catch((err) => showError(String(err)));
+        const mdFiles = paths.filter((p) => MD_EXTENSIONS.test(p));
+        const filesToOpen = mdFiles.length > 0 ? mdFiles : paths.slice(0, 1);
+        for (const path of filesToOpen) {
+          if (path) {
+            openFileAsTab(path).catch((err) => showError(String(err)));
+          }
+        }
       }
     });
   } catch (err) {
