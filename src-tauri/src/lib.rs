@@ -90,6 +90,54 @@ fn load_tabs(app: tauri::AppHandle) -> Vec<String> {
     }
 }
 
+/// Returns the path to `recent.json` inside the app's data directory.
+fn recent_file_path(app: &tauri::AppHandle) -> std::path::PathBuf {
+    let mut dir = app
+        .path()
+        .app_data_dir()
+        .expect("app data dir");
+    fs::create_dir_all(&dir).ok();
+    dir.push("recent.json");
+    dir
+}
+
+const MAX_RECENT_FILES: usize = 10;
+
+/// Save the recent file list, keeping the most recent `MAX_RECENT_FILES` entries.
+#[tauri::command]
+fn save_recent(app: tauri::AppHandle, paths: Vec<String>) {
+    let path = recent_file_path(&app);
+
+    if paths.is_empty() {
+        match fs::remove_file(&path) {
+            Ok(()) => {}
+            Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
+            Err(_) => {}
+        }
+        return;
+    }
+
+    let mut seen = std::collections::HashSet::new();
+    let trimmed: Vec<String> = paths
+        .into_iter()
+        .filter(|p| seen.insert(p.clone()))
+        .take(MAX_RECENT_FILES)
+        .collect();
+
+    let json = serde_json::to_string(&trimmed).unwrap_or_default();
+    let _ = fs::write(&path, json);
+}
+
+/// Return the previously saved list of recent file paths (may be empty).
+#[tauri::command]
+fn load_recent(app: tauri::AppHandle) -> Vec<String> {
+    let path = recent_file_path(&app);
+    match fs::read_to_string(&path) {
+        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+        Err(_) => vec![],
+    }
+}
+
 // ── Single-instance IPC ───────────────────────────────────────────────────
 
 /// Try to become the primary (first) instance by binding a local TCP port.
@@ -182,7 +230,9 @@ pub fn run() {
             get_initial_file,
             save_tabs,
             load_tabs,
-            path_exists
+            path_exists,
+            save_recent,
+            load_recent
         ])
         // Wire up single-instance IPC: forward paths received from secondary
         // instances to the frontend as "file-opened" events.

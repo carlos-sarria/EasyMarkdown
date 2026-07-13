@@ -17,6 +17,8 @@
  *    save_tabs          → persists open tab paths
  *    load_tabs          → restores persisted tab paths
  *    path_exists        → checks whether a filesystem path exists
+ *    save_recent        → persists the recent files list
+ *    load_recent        → restores the recent files list
  *
  *  CLI / OS file association (argv[1] → initial file):
  *    lib.rs reads std::env::args().nth(1), stores it in AppState, and exposes
@@ -57,6 +59,12 @@ let isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
  */
 let tabs = [];
 
+/**
+ * Recent file paths.
+ * @type {string[]}
+ */
+let recentFiles = [];
+
 const AUTO_REFRESH_MS = 1200;
 let autoRefreshInFlight = false;
 
@@ -88,6 +96,10 @@ const elAboutModal    = document.getElementById('about-modal');
 const elAboutContent  = document.getElementById('about-content');
 const elAboutClose    = document.getElementById('btn-about-close');
 const elAboutVersion  = document.getElementById('about-version');
+const elBtnRecent     = document.getElementById('btn-recent');
+const elRecentPanel   = document.getElementById('recent-panel');
+const elRecentList    = document.getElementById('recent-list');
+const elBtnClearRecent = document.getElementById('btn-clear-recent');
 const elAutoRefreshIndicator = document.getElementById('auto-refresh-indicator');
 
 let autoRefreshIndicatorTimeoutId = null;
@@ -378,6 +390,75 @@ async function persistTabs() {
   }
 }
 
+/** Add a path to the recent files list and persist it. */
+async function addRecentFile(path) {
+  if (!path || typeof path !== 'string') return;
+  recentFiles = recentFiles.filter((p) => p !== path);
+  recentFiles.unshift(path);
+  if (recentFiles.length > 10) recentFiles = recentFiles.slice(0, 10);
+  try {
+    await invoke('save_recent', { paths: recentFiles });
+  } catch (err) {
+    console.warn('Failed to save recent files:', err);
+  }
+  renderRecentFiles();
+}
+
+/** Load the recent files list from disk. */
+async function loadRecentFiles() {
+  try {
+    const paths = await invoke('load_recent');
+    recentFiles = Array.isArray(paths) ? paths.filter((p) => typeof p === 'string') : [];
+  } catch (err) {
+    console.warn('Failed to load recent files:', err);
+    recentFiles = [];
+  }
+  renderRecentFiles();
+}
+
+/** Clear the recent files list. */
+async function clearRecentFiles() {
+  recentFiles = [];
+  try {
+    await invoke('save_recent', { paths: [] });
+  } catch (err) {
+    console.warn('Failed to clear recent files:', err);
+  }
+  renderRecentFiles();
+}
+
+/** Render the recent files submenu inside the drawer. */
+function renderRecentFiles() {
+  if (!elRecentList) return;
+
+  if (recentFiles.length === 0) {
+    elRecentList.innerHTML = '<li class="recent-empty">No recent files</li>';
+    if (elBtnClearRecent) elBtnClearRecent.classList.add('hidden');
+    return;
+  }
+
+  elRecentList.innerHTML = recentFiles
+    .map(
+      (path, i) =>
+        `<li class="recent-item" data-recent="${i}" title="${escapeHtml(path)}">
+          <span class="recent-filename">${escapeHtml(path.replace(/\\/g, '/').split('/').pop() ?? path)}</span>
+        </li>`
+    )
+    .join('');
+
+  if (elBtnClearRecent) elBtnClearRecent.classList.remove('hidden');
+}
+
+function toggleRecentPanel() {
+  if (!elRecentPanel) return;
+  elRecentPanel.classList.toggle('hidden');
+}
+
+function closeRecentPanel() {
+  if (!elRecentPanel) return;
+  elRecentPanel.classList.add('hidden');
+}
+
 /** Re-open tabs that were saved from the previous session. */
 async function restoreTabs() {
   let paths = [];
@@ -394,6 +475,14 @@ async function restoreTabs() {
     if (typeof p === 'string' && p.trim() && !existing.has(p)) {
       await openFileAsTab(p, { allowStale: true });
     }
+  }
+
+  // If every restored tab is stale, drop them and show the welcome screen.
+  if (tabs.length > 0 && tabs.every((t) => t.stale)) {
+    tabs = [];
+    activeIndex = -1;
+    showWelcome();
+    await persistTabs();
   }
 }
 
@@ -438,11 +527,6 @@ function switchTab(index) {
   hydrateMarkdownImages().catch((err) => {
     showError(`Failed to load local images: ${err}`);
   });
-
-  if (tab.stale && tab.html === '') {
-    elMarkdownBody.innerHTML = `<p class="stale-message">This file is no longer available:<br><code>${escapeHtml(tab.path)}</code></p>`;
-  }
-
   elMarkdownBody.classList.remove('hidden');
   elWelcome.classList.add('hidden');
 
@@ -516,6 +600,7 @@ async function openFileAsTab(path, options = {}) {
     tabs.push({ path, html, filename, source: content, stale: false });
     switchTab(tabs.length - 1);
     await persistTabs();
+    await addRecentFile(path);
   } catch (err) {
     if (options.allowStale) {
       tabs.push({
@@ -607,6 +692,18 @@ async function refreshActiveTabIfChanged() {
 elBtnOpen.addEventListener('click', pickAndOpenFile);
 elBtnOpenWelcome.addEventListener('click', pickAndOpenFile);
 elBtnPrint.addEventListener('click', printCurrentDocument);
+if (elBtnRecent) {
+  elBtnRecent.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleRecentPanel();
+  });
+}
+if (elBtnClearRecent) {
+  elBtnClearRecent.addEventListener('click', async (event) => {
+    event.stopPropagation();
+    await clearRecentFiles();
+  });
+}
 elBtnAbout.addEventListener('click', openAbout);
 elBtnTheme.addEventListener('click', toggleTheme);
 elBtnMenu.addEventListener('click', (event) => {
@@ -653,11 +750,27 @@ document.addEventListener('contextmenu', (event) => {
 
 document.addEventListener('click', () => {
   if (!elDrawerPanel.classList.contains('hidden')) closeDrawer();
+  closeRecentPanel();
 });
 
 elDrawerPanel.addEventListener('click', (event) => {
   event.stopPropagation();
 });
+
+if (elRecentPanel) {
+  elRecentPanel.addEventListener('click', (event) => {
+    event.stopPropagation();
+  });
+
+  elRecentList.addEventListener('click', async (event) => {
+    const item = event.target.closest('.recent-item');
+    if (!item) return;
+    const index = parseInt(item.dataset.recent, 10);
+    const path = recentFiles[index];
+    if (!path) return;
+    await openFileAsTab(path);
+  });
+}
 
 // About dialog
 elAboutClose.addEventListener('click', closeAbout);
@@ -769,10 +882,11 @@ async function init() {
   // 3. Ask Rust for the file path passed via CLI arg or OS file association.
   const initialPath = await invoke('get_initial_file').catch(() => null);
 
-  // 4. Restore tabs from the previous session.
+  // 4. Restore tabs and recent files from the previous session.
   //    openFileAsTab() deduplicates, so the initial file (step 3) won't
   //    appear twice. Missing files are silently skipped.
   await restoreTabs();
+  await loadRecentFiles();
 
   // 5. Finaly open the tabs with the files
   if (typeof initialPath === 'string' && initialPath.trim()) {

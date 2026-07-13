@@ -23,6 +23,12 @@
         <button id="btn-print"  title="Print current document"><img src="/src-tauri/svg/print.svg"><span>Print</span></button>
         <button id="btn-theme"  title="Toggle dark / light mode"><img id="img_theme" src="/src-tauri/svg/dark_mode.svg"><span>Theme</span></button>
         <hr>
+        <button id="btn-recent" title="Open recent files"><img src="/src-tauri/svg/open.svg"><span>Recent</span></button>
+        <div id="recent-panel" class="hidden" role="menu" aria-label="Recent files">
+          <ul id="recent-list"></ul>
+          <button id="btn-clear-recent" title="Clear recent files list"><span>Clear recent</span></button>
+        </div>
+        <hr>
         <button id="btn-about"  title="About EasyMarkdown"><img src="/src-tauri/svg/info.svg"><span>About</span></button>
       </div>
     </header>
