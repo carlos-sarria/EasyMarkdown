@@ -242,10 +242,7 @@ button:active { opacity: 0.8; }
   max-height: 240px;
   overflow-y: auto;
   padding: 8px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background: var(--bg);
 }
 
 #recent-panel.hidden {
@@ -272,7 +269,7 @@ button:active { opacity: 0.8; }
   padding: 7px 10px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 11px;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -284,7 +281,7 @@ button:active { opacity: 0.8; }
 }
 
 .recent-filename {
-  font-family: 'SF Mono', 'Cascadia Code', Consolas, 'Liberation Mono', monospace;
+  font-family: inherit;
 }
 
 #btn-clear-recent {
@@ -466,7 +463,7 @@ button:active { opacity: 0.8; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: 'SF Mono', 'Cascadia Code', Consolas, 'Liberation Mono', monospace;
+  font-family: inherit;
 }
 
 .tab-close {
