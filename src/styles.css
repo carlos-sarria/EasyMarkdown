@@ -782,6 +782,7 @@ button:active { opacity: 0.8; }
   #error-banner,
   #welcome,
   #btn-open,
+  #btn-closeall,
   #btn-print,
   #btn-theme {
     display: none !important;

@@ -83,6 +83,7 @@ const elDropOverlay   = document.getElementById('drop-overlay');
 const elErrorBanner   = document.getElementById('error-banner');
 const elErrorMessage  = document.getElementById('error-message');
 const elBtnOpen       = document.getElementById('btn-open');
+const elBtnCloseAll   = document.getElementById('btn-closeall');
 const elBtnOpenWelcome= document.getElementById('btn-open-welcome');
 const elBtnPrint      = document.getElementById('btn-print');
 const elBtnAbout      = document.getElementById('btn-about');
@@ -635,6 +636,14 @@ async function pickAndOpenFile() {
   }
 }
 
+async function closeAllTabs() {
+  if (tabs.length === 0) return;
+  tabs = [];
+  activeIndex = -1;
+  showWelcome();
+  await persistTabs();
+}
+
 /** Refresh the active tab automatically when its source file changes. */
 async function refreshActiveTabIfChanged() {
   if (activeIndex < 0 || document.hidden || autoRefreshInFlight) return;
@@ -690,6 +699,7 @@ async function refreshActiveTabIfChanged() {
 // ── Event listeners ───────────────────────────────────────────────────────
 
 elBtnOpen.addEventListener('click', pickAndOpenFile);
+elBtnCloseAll.addEventListener('click', closeAllTabs);
 elBtnOpenWelcome.addEventListener('click', pickAndOpenFile);
 elBtnPrint.addEventListener('click', printCurrentDocument);
 if (elBtnRecent) {
@@ -818,6 +828,7 @@ document.addEventListener('keydown', async (e) => {
   if (mod && e.key === 'o') { e.preventDefault(); pickAndOpenFile(); return; }
   if (mod && e.key === 'p') { e.preventDefault(); printCurrentDocument(); return; }
   if (mod && e.key === 'w') { e.preventDefault(); if (activeIndex >= 0) await closeTab(activeIndex); return; }
+  if (mod && e.key === 'W') { e.preventDefault(); closeAllTabs(); return; }
   if (e.key === 'Escape' && !elAboutModal.classList.contains('hidden')) {
     closeAbout();
     return;
